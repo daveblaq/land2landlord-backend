@@ -1,0 +1,196 @@
+@baseUrl = http://localhost:4100/api
+@authToken = YOUR_TOKEN_HERE
+
+### 1. Create a New Property Listing (Draft)
+POST {{baseUrl}}/properties
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Luxury 3 Bed Apartment in Manchester",
+  "description": "Stunning tenanted apartment in the heart of Manchester city center with stable rental yield.",
+  "propertyType": "flat",
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "location": "Manchester",
+  "postcode": "M1 1AD",
+  "tenure": "leasehold",
+  "status": "published",
+  "heroImage": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80",
+  "gallery": [
+    {
+      "url": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80",
+      "alt": "Beautiful living area"
+    }
+  ],
+  "investmentMetrics": {
+    "askingPrice": 250000,
+    "monthlyRent": 1500,
+    "leaseYearsRemaining": 125
+  },
+  "serviceCharge": 120,
+  "groundRent": 20,
+  "councilTaxBand": "C",
+  "tenented": true,
+  "tenancyStatus": "Active AST",
+  "contractType": "ast",
+  "rentCollectionStatus": "agent-managed",
+  "arrearsStatus": "no-arrears",
+  "tenancyNotes": "Reliable tenant since 2024",
+  "epc": "B",
+  "floorplans": [
+    "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80"
+  ]
+}
+
+### 2. Create another Property (Different parameters for sorting)
+POST {{baseUrl}}/properties
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Cosy 1 Bed Studio in Liverpool",
+  "description": "High yield studio listing close to universities.",
+  "propertyType": "flat",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "location": "Liverpool",
+  "postcode": "L3 5AA",
+  "tenure": "freehold",
+  "status": "published",
+  "heroImage": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80",
+  "investmentMetrics": {
+    "askingPrice": 100000,
+    "monthlyRent": 800
+  },
+  "councilTaxBand": "A",
+  "tenented": true,
+  "tenancyStatus": "Active"
+}
+
+### 3. Search Properties - All Published
+GET {{baseUrl}}/properties
+
+### 4. Search Properties - Liverpool only
+GET {{baseUrl}}/properties?location=Liverpool
+
+### 5. Search Properties - Sort by Highest Yield
+# Liverpool studio should rank higher than Manchester (9.6% vs 7.2%)
+GET {{baseUrl}}/properties?sortBy=Highest Yield
+
+### 6. Search Properties - Sort by Lowest Price
+GET {{baseUrl}}/properties?sortBy=Lowest Price
+
+### 7. Get Property Details (Replace with generated slug or ID)
+# Use slug format generated on save e.g. luxury-3-bed-apartment-in-manchester-xxxxx
+@propertySlug = luxury-3-bed-apartment-in-manchester-
+GET {{baseUrl}}/properties/{{propertySlug}}
+
+### 8. Update Property Listing (Update status to under-offer)
+# Replace the ID below with a real MongoDB ObjectId from creation
+@propertyId = 654e56789abcdef012345678
+PATCH {{baseUrl}}/properties/{{propertyId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "status": "under-offer",
+  "investmentMetrics": {
+    "askingPrice": 245000
+  }
+}
+
+### 9. Delete a Property
+DELETE {{baseUrl}}/properties/{{propertyId}}
+Authorization: Bearer {{authToken}}
+
+
+### ==========================================
+### LEAD SUBMISSIONS & ROUTING MULTIPLEXER
+### ==========================================
+
+### 10. Submit a General Enquiry Lead
+POST {{baseUrl}}/leads
+Content-Type: application/json
+
+{
+  "name": "Jane Smith",
+  "email": "janesmith@example.com",
+  "phone": "+447123456789",
+  "type": "General Enquiry",
+  "message": "I would like to speak to your concierge team regarding selling my portfolio."
+}
+
+### 11. Submit a Property Enquiry Lead (Requires propertyId)
+POST {{baseUrl}}/leads
+Content-Type: application/json
+
+{
+  "name": "Bob Harrison",
+  "email": "bob@example.com",
+  "type": "Property Enquiry",
+  "message": "Is this property still available?",
+  "metadata": {
+    "propertyId": "654e56789abcdef012345678"
+  }
+}
+
+### 12. Submit a Mortgage Lead (Multiplexed to Partner)
+POST {{baseUrl}}/leads
+Content-Type: application/json
+
+{
+  "name": "Alice Green",
+  "email": "alice.green@example.com",
+  "phone": "+447890123456",
+  "type": "Mortgage Lead",
+  "metadata": {
+    "budget": 200000,
+    "intent": "Buy-to-Let Mortgage"
+  }
+}
+
+### 13. Submit an Insurance Lead (Multiplexed to Partner)
+POST {{baseUrl}}/leads
+Content-Type: application/json
+
+{
+  "name": "Charlie Brown",
+  "email": "charlie@example.com",
+  "type": "Insurance Lead",
+  "metadata": {
+    "structuralRequirements": "Standard brick construction with slate roof, tenanted residential block."
+  }
+}
+
+### 14. Submit a Property Valuation Lead (Multiplexed to Partner)
+POST {{baseUrl}}/leads
+Content-Type: application/json
+
+{
+  "name": "Diane Prince",
+  "email": "diane@example.com",
+  "type": "Valuation Lead",
+  "metadata": {
+    "propertyAddress": "123 High Street, London, EC1A 1BB"
+  }
+}
+
+### 15. List Leads (Concierge Dashboard view)
+GET {{baseUrl}}/leads
+Authorization: Bearer {{authToken}}
+
+### 16. Get Lead Details
+@leadId = 654e56789abcdef012345679
+GET {{baseUrl}}/leads/{{leadId}}
+Authorization: Bearer {{authToken}}
+
+### 17. Update Lead Status (Triage status updates)
+PATCH {{baseUrl}}/leads/{{leadId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "status": "Contacted",
+  "message": "Contacted via phone, scheduling viewing."
+}

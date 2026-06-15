@@ -1,0 +1,32 @@
+@baseUrl = http://localhost:4000/api
+
+### Register a new user
+POST {{baseUrl}}/auth/sign-up
+Content-Type: application/json
+
+{
+  "fullname": "David Olatunji",
+  "username": "davecodes",
+  "email": "o.davecodes@gmail.com",
+  "password": "password123",
+  "country": "Nigeria",
+  "role": "admin",
+  "isVIP": false,
+  "vipType": "none"
+}
+
+### Login user
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "o.davecodes@gmail.com",
+  "password": "password123"
+}
+
+### Get user details (Requires Token)
+# Replace the token below with the one received from register or login
+@authToken = YOUR_TOKEN_HERE
+
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{authToken}}

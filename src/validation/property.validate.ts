@@ -1,0 +1,69 @@
+import { z } from 'zod';
+
+export const createPropertyValidator = z.object({
+  title: z.string().min(10, 'Title should be between 10 and 100 characters').max(100).trim(),
+  description: z.any().refine((val) => val !== undefined && val !== null, 'Description is required'),
+  propertyType: z.enum(['flat', 'terraced', 'semi-detached', 'detached', 'maisonette', 'bungalow']),
+  bedrooms: z.number().min(0, 'Bedrooms cannot be negative'),
+  bathrooms: z.number().min(0, 'Bathrooms cannot be negative'),
+  location: z.string().min(1, 'Location is required').trim(),
+  postcode: z.string().min(1, 'Postcode is required').trim().regex(/^[A-Z]{1,2}[0-9R][0-9A-Z]?$/i, 'Please enter a valid UK postcode outcode (e.g., M5, LS1, SW1A).'),
+  tenure: z.enum(['freehold', 'leasehold', 'share-of-freehold']),
+  heroImage: z.string().min(1, 'Hero image is required').trim(),
+  gallery: z.array(z.any()).optional().default([]),
+  investmentMetrics: z.object({
+    askingPrice: z.number().positive('Asking price must be positive'),
+    monthlyRent: z.number().positive('Monthly rent must be positive'),
+    leaseYearsRemaining: z.number().min(0, 'Lease years remaining must be positive').int().optional()
+  }),
+  serviceCharge: z.number().min(0).optional().default(0),
+  groundRent: z.number().min(0).optional().default(0),
+  councilTaxBand: z.enum(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']).optional(),
+  tenented: z.boolean().optional().default(true),
+  tenancyStatus: z.string().optional(),
+  tenantMoveInDate: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+  contractType: z.enum(['ast', 'non-ast', 'company-let', 'license']).optional(),
+  rentCollectionStatus: z.enum(['agent-managed', 'direct-to-landlord', 'guaranteed']).optional(),
+  arrearsStatus: z.enum(['no-arrears', 'historical-resolved', 'active-arrears']).optional().default('no-arrears'),
+  tenancyNotes: z.string().optional(),
+  epc: z.string().optional(),
+  floorplans: z.array(z.any()).optional().default([]),
+  propertyPacks: z.array(z.any()).optional().default([]),
+  complianceDocuments: z.array(z.any()).optional().default([]),
+  status: z.enum(['draft', 'pending-review', 'published', 'under-offer', 'sold', 'archived']).optional().default('draft'),
+  displayOnHomepage: z.boolean().optional().default(false)
+});
+
+export const updatePropertyValidator = z.object({
+  title: z.string().min(10).max(100).trim().optional(),
+  description: z.any().optional(),
+  propertyType: z.enum(['flat', 'terraced', 'semi-detached', 'detached', 'maisonette', 'bungalow']).optional(),
+  bedrooms: z.number().min(0).optional(),
+  bathrooms: z.number().min(0).optional(),
+  location: z.string().trim().optional(),
+  postcode: z.string().trim().regex(/^[A-Z]{1,2}[0-9R][0-9A-Z]?$/i, 'Please enter a valid UK postcode outcode (e.g., M5, LS1, SW1A).').optional(),
+  tenure: z.enum(['freehold', 'leasehold', 'share-of-freehold']).optional(),
+  heroImage: z.string().trim().optional(),
+  gallery: z.array(z.any()).optional(),
+  investmentMetrics: z.object({
+    askingPrice: z.number().positive().optional(),
+    monthlyRent: z.number().positive().optional(),
+    leaseYearsRemaining: z.number().min(0).int().optional()
+  }).partial().optional(),
+  serviceCharge: z.number().min(0).optional(),
+  groundRent: z.number().min(0).optional(),
+  councilTaxBand: z.enum(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']).optional(),
+  tenented: z.boolean().optional(),
+  tenancyStatus: z.string().optional(),
+  tenantMoveInDate: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+  contractType: z.enum(['ast', 'non-ast', 'company-let', 'license']).optional(),
+  rentCollectionStatus: z.enum(['agent-managed', 'direct-to-landlord', 'guaranteed']).optional(),
+  arrearsStatus: z.enum(['no-arrears', 'historical-resolved', 'active-arrears']).optional(),
+  tenancyNotes: z.string().optional(),
+  epc: z.string().optional(),
+  floorplans: z.array(z.any()).optional(),
+  propertyPacks: z.array(z.any()).optional(),
+  complianceDocuments: z.array(z.any()).optional(),
+  status: z.enum(['draft', 'pending-review', 'published', 'under-offer', 'sold', 'archived']).optional(),
+  displayOnHomepage: z.boolean().optional()
+});
