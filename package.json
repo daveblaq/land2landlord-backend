@@ -1,5 +1,5 @@
 {
-  "name": "prediction",
+  "name": "landlord2landlord-backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -8,7 +8,8 @@
     "start": "node --max-old-space-size=1024 dist/index.js",
     "dev": "ts-node-dev src/index.ts",
     "gcp-build": "npx tsc",
-    "render-postbuild": "npm run build"
+    "render-postbuild": "npm run build",
+    "postinstall": "npm run build"
   },
   "keywords": [],
   "author": "",
