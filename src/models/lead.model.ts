@@ -8,6 +8,8 @@ export interface ILead extends Document {
   status: 'New' | 'Contacted' | 'Qualified' | 'Viewing Scheduled' | 'Negotiating' | 'Closed';
   message?: string;
   metadata?: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const LeadSchema = new Schema<ILead>({

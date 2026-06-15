@@ -2,6 +2,8 @@ import express from 'express';
 import authRoute from './auth.routes';
 import propertyRoute from './property.routes';
 import leadRoute from './lead.routes';
+import statsRoute from './stats.routes';
+import activityRoute from './activity.routes';
 
 const router = express.Router();
 
@@ -17,6 +19,14 @@ const defaultRoutes = [
   {
     path: '/leads',
     route: leadRoute,
+  },
+  {
+    path: '/stats',
+    route: statsRoute,
+  },
+  {
+    path: '/activities',
+    route: activityRoute,
   },
 ];
 
