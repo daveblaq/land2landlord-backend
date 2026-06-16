@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, me, logout } from '../controllers/auth.controller';
+import { register, login, me, logout, updateProfile, changePassword } from '../controllers/auth.controller';
 import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = express.Router();
@@ -100,5 +100,7 @@ router.post('/login', login);
  */
 router.get('/me', authenticateToken, me);
 router.post('/logout', authenticateToken, logout);
+router.put('/profile', authenticateToken, updateProfile);
+router.put('/change-password', authenticateToken, changePassword);
 
 export default router;

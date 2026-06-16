@@ -12,11 +12,12 @@ export interface IUser extends Document {
   vipType?: string;
   isEmailVerified?: boolean;
   status?: boolean;
+  comparePassword(password: string): Promise<boolean>;
 }
 
 export interface IUserModel extends Model<IUser> {
-  isEmailTaken(email: string): Promise<boolean>;
-  isUsernameTaken(username: string): Promise<boolean>;
+  isEmailTaken(email: string, excludeUserId?: string): Promise<boolean>;
+  isUsernameTaken(username: string, excludeUserId?: string): Promise<boolean>;
 }
 
 export interface AuthResult {
