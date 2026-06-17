@@ -6,6 +6,8 @@ export const createPropertyValidator = z.object({
   propertyType: z.enum(['flat', 'terraced', 'semi-detached', 'detached', 'maisonette', 'bungalow']),
   bedrooms: z.number().min(0, 'Bedrooms cannot be negative'),
   bathrooms: z.number().min(0, 'Bathrooms cannot be negative'),
+  sqft: z.number().positive('Floor area must be a positive number'),
+  address: z.string().min(1, 'Full address is required').trim(),
   location: z.string().min(1, 'Location is required').trim(),
   postcode: z.string().min(1, 'Postcode is required').trim().regex(/^[A-Z]{1,2}[0-9R][0-9A-Z]?$/i, 'Please enter a valid UK postcode outcode (e.g., M5, LS1, SW1A).'),
   tenure: z.enum(['freehold', 'leasehold', 'share-of-freehold']),
@@ -31,7 +33,8 @@ export const createPropertyValidator = z.object({
   propertyPacks: z.array(z.any()).optional().default([]),
   complianceDocuments: z.array(z.any()).optional().default([]),
   status: z.enum(['draft', 'pending-review', 'published', 'under-offer', 'sold', 'archived']).optional().default('draft'),
-  displayOnHomepage: z.boolean().optional().default(false)
+  displayOnHomepage: z.boolean().optional().default(false),
+  isFeatured: z.boolean().optional().default(false)
 });
 
 export const updatePropertyValidator = z.object({
@@ -40,6 +43,8 @@ export const updatePropertyValidator = z.object({
   propertyType: z.enum(['flat', 'terraced', 'semi-detached', 'detached', 'maisonette', 'bungalow']).optional(),
   bedrooms: z.number().min(0).optional(),
   bathrooms: z.number().min(0).optional(),
+  sqft: z.number().positive().optional(),
+  address: z.string().min(1).trim().optional(),
   location: z.string().trim().optional(),
   postcode: z.string().trim().regex(/^[A-Z]{1,2}[0-9R][0-9A-Z]?$/i, 'Please enter a valid UK postcode outcode (e.g., M5, LS1, SW1A).').optional(),
   tenure: z.enum(['freehold', 'leasehold', 'share-of-freehold']).optional(),
@@ -65,5 +70,6 @@ export const updatePropertyValidator = z.object({
   propertyPacks: z.array(z.any()).optional(),
   complianceDocuments: z.array(z.any()).optional(),
   status: z.enum(['draft', 'pending-review', 'published', 'under-offer', 'sold', 'archived']).optional(),
-  displayOnHomepage: z.boolean().optional()
+  displayOnHomepage: z.boolean().optional(),
+  isFeatured: z.boolean().optional()
 });

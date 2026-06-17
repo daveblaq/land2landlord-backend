@@ -7,6 +7,8 @@ export interface IProperty extends Document {
   propertyType: string;
   bedrooms: number;
   bathrooms: number;
+  sqft: number;
+  address: string;
   location: string;
   postcode: string;
   tenure: string;
@@ -35,6 +37,7 @@ export interface IProperty extends Document {
   complianceDocuments: any[];
   status: 'draft' | 'pending-review' | 'published' | 'under-offer' | 'sold' | 'archived';
   displayOnHomepage: boolean;
+  isFeatured: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +49,8 @@ const PropertySchema = new Schema<IProperty>({
   propertyType: { type: String, required: true },
   bedrooms: { type: Number, required: true },
   bathrooms: { type: Number, required: true },
+  sqft: { type: Number, required: true },
+  address: { type: String, required: true, trim: true },
   location: { type: String, required: true },
   postcode: { type: String, required: true },
   tenure: { type: String, required: true },
@@ -77,7 +82,8 @@ const PropertySchema = new Schema<IProperty>({
     enum: ['draft', 'pending-review', 'published', 'under-offer', 'sold', 'archived'], 
     default: 'draft' 
   },
-  displayOnHomepage: { type: Boolean, default: false }
+  displayOnHomepage: { type: Boolean, default: false },
+  isFeatured: { type: Boolean, default: false }
 }, { timestamps: true });
 
 // Performance Optimization Indexes
