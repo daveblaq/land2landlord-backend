@@ -13,6 +13,7 @@ export interface PropertyQueryOptions {
   sortBy?: 'Newest' | 'Highest Yield' | 'Lowest Price' | 'Highest Price';
   limit?: number;
   page?: number;
+  isFeatured?: boolean;
 }
 
 /**
@@ -72,6 +73,11 @@ const deletePropertyById = async (id: string): Promise<IProperty | null> => {
 const queryProperties = async (options: PropertyQueryOptions) => {
   const filter: any = {};
 
+  // Featured Filter
+  if (options.isFeatured !== undefined) {
+    filter.isFeatured = options.isFeatured;
+  }
+
   // Status Filter
   if (options.status) {
     if (options.status !== 'all') {
@@ -125,21 +131,21 @@ const queryProperties = async (options: PropertyQueryOptions) => {
   }
 
   // Sorting
-  let sort: any = { createdAt: -1 }; // Default: Newest
+  let sort: any = { isFeatured: -1, createdAt: -1 }; // Default: Featured first, then newest
   if (options.sortBy) {
     switch (options.sortBy) {
       case 'Highest Yield':
-        sort = { 'investmentMetrics.grossYield': -1, createdAt: -1 };
+        sort = { isFeatured: -1, 'investmentMetrics.grossYield': -1, createdAt: -1 };
         break;
       case 'Lowest Price':
-        sort = { 'investmentMetrics.askingPrice': 1, createdAt: -1 };
+        sort = { isFeatured: -1, 'investmentMetrics.askingPrice': 1, createdAt: -1 };
         break;
       case 'Highest Price':
-        sort = { 'investmentMetrics.askingPrice': -1, createdAt: -1 };
+        sort = { isFeatured: -1, 'investmentMetrics.askingPrice': -1, createdAt: -1 };
         break;
       case 'Newest':
       default:
-        sort = { createdAt: -1 };
+        sort = { isFeatured: -1, createdAt: -1 };
         break;
     }
   }
@@ -164,6 +170,13 @@ const queryProperties = async (options: PropertyQueryOptions) => {
   };
 };
 
+/**
+ * Get all published properties with only slugs and updatedAt dates for sitemap
+ */
+const getPublishedPropertiesForSitemap = async () => {
+  return Property.find({ status: 'published' }, 'slug updatedAt');
+};
+
 const propertyService = {
   createProperty,
   getPropertyById,
@@ -171,6 +184,7 @@ const propertyService = {
   updatePropertyById,
   deletePropertyById,
   queryProperties,
+  getPublishedPropertiesForSitemap,
 };
 
 export default propertyService;

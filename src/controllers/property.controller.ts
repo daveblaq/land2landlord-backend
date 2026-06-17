@@ -128,6 +128,7 @@ export const searchProperties = catchAsync(async (req: Request, res: Response) =
     sortBy: req.query.sortBy as any,
     limit: req.query.limit ? Number(req.query.limit) : undefined,
     page: req.query.page ? Number(req.query.page) : undefined,
+    isFeatured: req.query.isFeatured === 'true' ? true : req.query.isFeatured === 'false' ? false : undefined,
   };
 
   const results = await propertyService.queryProperties(options);
@@ -179,4 +180,16 @@ export const uploadPropertyImages = catchAsync(async (req: Request, res: Respons
       data: null,
     });
   }
+});
+
+/**
+ * Retrieve all published listings' slugs and updatedAt dates for sitemap
+ */
+export const getPropertiesSitemap = catchAsync(async (req: Request, res: Response) => {
+  const results = await propertyService.getPublishedPropertiesForSitemap();
+  return res.status(httpStatus.OK).json({
+    status: httpStatus.OK,
+    message: 'Sitemap property listings retrieved successfully',
+    data: results,
+  });
 });

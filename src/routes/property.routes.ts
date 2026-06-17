@@ -5,7 +5,8 @@ import {
   updateProperty,
   deleteProperty,
   searchProperties,
-  uploadPropertyImages
+  uploadPropertyImages,
+  getPropertiesSitemap
 } from '../controllers/property.controller';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware';
 
@@ -190,6 +191,19 @@ router.post('/upload', authenticateToken, authorizeRoles('admin', 'concierge'), 
  *         description: Search results retrieved successfully
  */
 router.get('/', searchProperties);
+
+/**
+ * @openapi
+ * /api/properties/sitemap:
+ *   get:
+ *     tags:
+ *       - Properties
+ *     summary: Retrieve published property slugs and timestamps for sitemap
+ *     responses:
+ *       200:
+ *         description: Sitemap listings retrieved successfully
+ */
+router.get('/sitemap', getPropertiesSitemap);
 
 /**
  * @openapi
