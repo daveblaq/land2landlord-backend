@@ -34,7 +34,8 @@ export const createPropertyValidator = z.object({
   complianceDocuments: z.array(z.any()).optional().default([]),
   status: z.enum(['draft', 'pending-review', 'published', 'under-offer', 'sold', 'archived']).optional().default('draft'),
   displayOnHomepage: z.boolean().optional().default(false),
-  isFeatured: z.boolean().optional().default(false)
+  isFeatured: z.boolean().optional().default(false),
+  isHighYield: z.boolean().optional().default(false)
 });
 
 export const updatePropertyValidator = z.object({
@@ -71,5 +72,6 @@ export const updatePropertyValidator = z.object({
   complianceDocuments: z.array(z.any()).optional(),
   status: z.enum(['draft', 'pending-review', 'published', 'under-offer', 'sold', 'archived']).optional(),
   displayOnHomepage: z.boolean().optional(),
-  isFeatured: z.boolean().optional()
+  isFeatured: z.boolean().optional(),
+  isHighYield: z.boolean().optional()
 });

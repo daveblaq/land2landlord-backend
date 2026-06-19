@@ -5,11 +5,13 @@ import { createPropertyValidator, updatePropertyValidator } from '../validation/
 import { ZodError } from 'zod';
 import httpStatus from 'http-status';
 import { uploadToMedia } from '../utils/cloudinary';
+import { CustomRequest } from '../middleware/auth.middleware';
+import auditLogService from '../services/audit-log.service';
 
 /**
  * Create Property Listing
  */
-export const createProperty = catchAsync(async (req: Request, res: Response) => {
+export const createProperty = catchAsync(async (req: CustomRequest, res: Response) => {
   try {
     createPropertyValidator.parse(req.body);
   } catch (err) {
@@ -23,6 +25,22 @@ export const createProperty = catchAsync(async (req: Request, res: Response) => 
   }
 
   const property = await propertyService.createProperty(req.body);
+
+  // Audit log
+  if (req.user) {
+    auditLogService.log({
+      performedBy: req.user._id,
+      performerName: req.user.fullname,
+      performerEmail: req.user.email,
+      performerRole: req.user.role,
+      action: 'CREATE',
+      resource: 'PROPERTY',
+      resourceId: String(property._id),
+      resourceLabel: property.title ?? 'Untitled Property',
+      ipAddress: req.ip,
+    });
+  }
+
   return res.status(httpStatus.CREATED).json({
     status: httpStatus.CREATED,
     message: 'Property listing created successfully',
@@ -33,7 +51,7 @@ export const createProperty = catchAsync(async (req: Request, res: Response) => 
 /**
  * Update Property Listing
  */
-export const updateProperty = catchAsync(async (req: Request, res: Response) => {
+export const updateProperty = catchAsync(async (req: CustomRequest, res: Response) => {
   try {
     updatePropertyValidator.parse(req.body);
   } catch (err) {
@@ -52,6 +70,22 @@ export const updateProperty = catchAsync(async (req: Request, res: Response) => 
       status: httpStatus.NOT_FOUND,
       message: 'Property listing not found',
       data: null,
+    });
+  }
+
+  // Audit log
+  if (req.user) {
+    auditLogService.log({
+      performedBy: req.user._id,
+      performerName: req.user.fullname,
+      performerEmail: req.user.email,
+      performerRole: req.user.role,
+      action: 'UPDATE',
+      resource: 'PROPERTY',
+      resourceId: req.params.id,
+      resourceLabel: property.title ?? 'Untitled Property',
+      metadata: { updatedFields: Object.keys(req.body) },
+      ipAddress: req.ip,
     });
   }
 
@@ -94,13 +128,28 @@ export const getProperty = catchAsync(async (req: Request, res: Response) => {
 /**
  * Delete Property Listing
  */
-export const deleteProperty = catchAsync(async (req: Request, res: Response) => {
+export const deleteProperty = catchAsync(async (req: CustomRequest, res: Response) => {
   const property = await propertyService.deletePropertyById(req.params.id);
   if (!property) {
     return res.status(httpStatus.NOT_FOUND).json({
       status: httpStatus.NOT_FOUND,
       message: 'Property listing not found',
       data: null,
+    });
+  }
+
+  // Audit log
+  if (req.user) {
+    auditLogService.log({
+      performedBy: req.user._id,
+      performerName: req.user.fullname,
+      performerEmail: req.user.email,
+      performerRole: req.user.role,
+      action: 'DELETE',
+      resource: 'PROPERTY',
+      resourceId: req.params.id,
+      resourceLabel: (property as any).title ?? 'Deleted Property',
+      ipAddress: req.ip,
     });
   }
 

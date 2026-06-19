@@ -99,8 +99,90 @@ router.post('/login', login);
  *         description: Unauthorized
  */
 router.get('/me', authenticateToken, me);
+
+/**
+ * @openapi
+ * /api/auth/logout:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Logout current user
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       401:
+ *         description: Unauthorized
+ */
 router.post('/logout', authenticateToken, logout);
+
+/**
+ * @openapi
+ * /api/auth/profile:
+ *   put:
+ *     tags:
+ *       - Auth
+ *     summary: Update profile details
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullname:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               country:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ */
 router.put('/profile', authenticateToken, updateProfile);
+
+/**
+ * @openapi
+ * /api/auth/change-password:
+ *   put:
+ *     tags:
+ *       - Auth
+ *     summary: Change user password
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 format: password
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *       400:
+ *         description: Bad request or incorrect password
+ *       401:
+ *         description: Unauthorized
+ */
 router.put('/change-password', authenticateToken, changePassword);
 
 export default router;

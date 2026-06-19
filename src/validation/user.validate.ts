@@ -29,7 +29,6 @@ export type UserUpdateInput = z.infer<typeof userUpdateSchema>;
 
 export const profileUpdateSchema = z.object({
   fullname: z.string().min(1, 'Full name is required').trim().optional(),
-  username: z.string().min(3, 'Username must be at least 3 characters').trim().optional(),
   email: z.string().email('Invalid email address').trim().optional(),
   country: z.string().min(1, 'Country is required').trim().optional(),
 });

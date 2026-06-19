@@ -7,6 +7,7 @@ import httpStatus from 'http-status';
 import userService from '../services/user.service';
 import { CustomRequest } from '../middleware/auth.middleware';
 import User from '../models/user.model';
+import auditLogService from '../services/audit-log.service';
 
 export const register = catchAsync(async (req: Request, res: Response) => {
   // Validate request body with Zod
@@ -125,7 +126,7 @@ export const updateProfile = catchAsync(async (req: CustomRequest, res: Response
   }
 
   const userId = req.user._id;
-  const { fullname, username, email, country } = req.body;
+  const { fullname, email, country } = req.body;
 
   // Check email availability
   if (email) {
@@ -139,25 +140,30 @@ export const updateProfile = catchAsync(async (req: CustomRequest, res: Response
     }
   }
 
-  // Check username availability
-  if (username) {
-    const isUsernameTaken = await User.isUsernameTaken(username, userId);
-    if (isUsernameTaken) {
-      return res.status(httpStatus.BAD_REQUEST).json({
-        status: httpStatus.BAD_REQUEST,
-        message: 'Username is already taken',
-        data: null,
-      });
-    }
+  // Update profile
+  const updateFields: any = {};
+  if (fullname !== undefined) updateFields.fullname = fullname;
+  if (country !== undefined) updateFields.country = country;
+  if (email !== undefined) {
+    updateFields.email = email;
+    updateFields.username = email; // Keep username synced with email
   }
 
-  // Update profile
-  const updatedUser = await userService.updateUser(userId, {
-    fullname,
-    username,
-    country,
-    email,
-  } as any);
+  const updatedUser = await userService.updateUser(userId, updateFields);
+
+  // Audit log
+  auditLogService.log({
+    performedBy: userId,
+    performerName: req.user.fullname,
+    performerEmail: req.user.email,
+    performerRole: req.user.role,
+    action: 'UPDATE',
+    resource: 'USER_PROFILE',
+    resourceId: String(userId),
+    resourceLabel: req.user.fullname,
+    metadata: { updatedFields: Object.keys(updateFields) },
+    ipAddress: req.ip,
+  });
 
   return res.status(httpStatus.OK).json({
     status: httpStatus.OK,
@@ -215,6 +221,19 @@ export const changePassword = catchAsync(async (req: CustomRequest, res: Respons
   // Set new password (will trigger pre-save hashing hook)
   user.password = newPassword;
   await user.save();
+
+  // Audit log
+  auditLogService.log({
+    performedBy: userId,
+    performerName: req.user!.fullname,
+    performerEmail: req.user!.email,
+    performerRole: req.user!.role,
+    action: 'UPDATE',
+    resource: 'USER_PASSWORD',
+    resourceId: String(userId),
+    resourceLabel: req.user!.fullname,
+    ipAddress: req.ip,
+  });
 
   return res.status(httpStatus.OK).json({
     status: httpStatus.OK,

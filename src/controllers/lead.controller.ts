@@ -4,11 +4,13 @@ import catchAsync from '../utils/catchAsync';
 import { createLeadValidator, updateLeadValidator } from '../validation/lead.validate';
 import { ZodError } from 'zod';
 import httpStatus from 'http-status';
+import { CustomRequest } from '../middleware/auth.middleware';
+import auditLogService from '../services/audit-log.service';
 
 /**
  * Submit / Create a Lead
  */
-export const createLead = catchAsync(async (req: Request, res: Response) => {
+export const createLead = catchAsync(async (req: CustomRequest, res: Response) => {
   try {
     createLeadValidator.parse(req.body);
   } catch (err) {
@@ -22,6 +24,22 @@ export const createLead = catchAsync(async (req: Request, res: Response) => {
   }
 
   const lead = await leadService.createLead(req.body);
+
+  // Audit log (only if performed by an authenticated CMS user, not a public form submission)
+  if (req.user) {
+    auditLogService.log({
+      performedBy: req.user._id,
+      performerName: req.user.fullname,
+      performerEmail: req.user.email,
+      performerRole: req.user.role,
+      action: 'CREATE',
+      resource: 'LEAD',
+      resourceId: String(lead._id),
+      resourceLabel: `${lead.name} — ${lead.type}`,
+      ipAddress: req.ip,
+    });
+  }
+
   return res.status(httpStatus.CREATED).json({
     status: httpStatus.CREATED,
     message: 'Lead submitted successfully',
@@ -52,7 +70,7 @@ export const getLead = catchAsync(async (req: Request, res: Response) => {
 /**
  * Update Lead Status / Workflow (Concierge Action)
  */
-export const updateLead = catchAsync(async (req: Request, res: Response) => {
+export const updateLead = catchAsync(async (req: CustomRequest, res: Response) => {
   try {
     updateLeadValidator.parse(req.body);
   } catch (err) {
@@ -71,6 +89,25 @@ export const updateLead = catchAsync(async (req: Request, res: Response) => {
       status: httpStatus.NOT_FOUND,
       message: 'Lead not found',
       data: null,
+    });
+  }
+
+  // Audit log
+  if (req.user) {
+    auditLogService.log({
+      performedBy: req.user._id,
+      performerName: req.user.fullname,
+      performerEmail: req.user.email,
+      performerRole: req.user.role,
+      action: 'UPDATE',
+      resource: 'LEAD',
+      resourceId: req.params.id,
+      resourceLabel: `${lead.name} — ${lead.type}`,
+      metadata: {
+        updatedFields: Object.keys(req.body),
+        newStatus: lead.status,
+      },
+      ipAddress: req.ip,
     });
   }
 

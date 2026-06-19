@@ -38,6 +38,7 @@ export interface IProperty extends Document {
   status: 'draft' | 'pending-review' | 'published' | 'under-offer' | 'sold' | 'archived';
   displayOnHomepage: boolean;
   isFeatured: boolean;
+  isHighYield: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,7 +84,8 @@ const PropertySchema = new Schema<IProperty>({
     default: 'draft' 
   },
   displayOnHomepage: { type: Boolean, default: false },
-  isFeatured: { type: Boolean, default: false }
+  isFeatured: { type: Boolean, default: false },
+  isHighYield: { type: Boolean, default: false },
 }, { timestamps: true });
 
 // Performance Optimization Indexes

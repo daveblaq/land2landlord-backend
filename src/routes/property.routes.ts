@@ -123,6 +123,38 @@ const router = express.Router();
  *         description: Bad request
  */
 router.post('/', authenticateToken, authorizeRoles('admin', 'concierge'), createProperty);
+
+/**
+ * @openapi
+ * /api/properties/upload:
+ *   post:
+ *     tags:
+ *       - Properties
+ *     summary: Upload property images (Admin/Concierge only)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       200:
+ *         description: Images uploaded successfully
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - admin or concierge role required
+ */
 router.post('/upload', authenticateToken, authorizeRoles('admin', 'concierge'), uploadPropertyImages);
 
 /**
