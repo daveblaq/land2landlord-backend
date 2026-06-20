@@ -134,8 +134,8 @@ export const getLeads = catchAsync(async (req: Request, res: Response) => {
   }
 
   const options = {
-    limit: req.query.limit ? Number(req.query.limit) : undefined,
-    page: req.query.page ? Number(req.query.page) : undefined,
+    limit: req.query.limit !== undefined ? Number(req.query.limit) : undefined,
+    page: req.query.page !== undefined ? Number(req.query.page) : undefined,
   };
 
   const results = await leadService.queryLeads(filter, options);
@@ -145,3 +145,145 @@ export const getLeads = catchAsync(async (req: Request, res: Response) => {
     data: results,
   });
 });
+
+/**
+ * Get Lead Stats (Status Counts)
+ */
+export const getLeadStats = catchAsync(async (req: Request, res: Response) => {
+  const filter: any = {};
+  if (req.query.type) {
+    if (Array.isArray(req.query.type)) {
+      filter.type = { $in: req.query.type };
+    } else {
+      filter.type = req.query.type;
+    }
+  }
+  if (req.query.email) {
+    filter.email = { $regex: req.query.email as string, $options: 'i' };
+  }
+
+  const stats = await leadService.getLeadStats(filter);
+  return res.status(httpStatus.OK).json({
+    status: httpStatus.OK,
+    message: 'Lead stats retrieved successfully',
+    data: stats,
+  });
+});
+
+/**
+ * Add note to a Lead (Admin/Concierge action)
+ */
+export const addLeadNote = catchAsync(async (req: CustomRequest, res: Response) => {
+  const { content } = req.body;
+  if (!content || typeof content !== 'string' || content.trim() === '') {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      status: httpStatus.BAD_REQUEST,
+      message: 'Note content is required',
+      data: null,
+    });
+  }
+
+  const lead = await leadService.addNoteToLead(req.params.id, content, req.user);
+  if (!lead) {
+    return res.status(httpStatus.NOT_FOUND).json({
+      status: httpStatus.NOT_FOUND,
+      message: 'Lead not found',
+      data: null,
+    });
+  }
+
+  // Audit log
+  auditLogService.log({
+    performedBy: req.user._id,
+    performerName: req.user.fullname,
+    performerEmail: req.user.email,
+    performerRole: req.user.role,
+    action: 'UPDATE',
+    resource: 'LEAD',
+    resourceId: req.params.id,
+    resourceLabel: `${lead.name} — Added Note`,
+    metadata: {
+      noteContent: content,
+    },
+    ipAddress: req.ip,
+  });
+
+  return res.status(httpStatus.OK).json({
+    status: httpStatus.OK,
+    message: 'Note added successfully',
+    data: lead,
+  });
+});
+
+/**
+ * Bulk Create Leads
+ */
+export const createLeadsBulk = catchAsync(async (req: CustomRequest, res: Response) => {
+  const { leads } = req.body;
+
+  if (!leads || !Array.isArray(leads)) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      status: httpStatus.BAD_REQUEST,
+      message: 'leads must be an array of lead objects',
+      data: null,
+    });
+  }
+
+  if (leads.length === 0) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      status: httpStatus.BAD_REQUEST,
+      message: 'leads array cannot be empty',
+      data: null,
+    });
+  }
+
+  const errors: string[] = [];
+  leads.forEach((lead, index) => {
+    try {
+      createLeadValidator.parse(lead);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const rowErrors = err.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
+        errors.push(`Row ${index + 1}: ${rowErrors}`);
+      } else {
+        errors.push(`Row ${index + 1}: ${(err as Error).message}`);
+      }
+    }
+  });
+
+  if (errors.length > 0) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      status: httpStatus.BAD_REQUEST,
+      message: 'Validation failed for some leads',
+      data: { errors },
+    });
+  }
+
+  const createdLeads = [];
+  for (const leadData of leads) {
+    const lead = await leadService.createLead(leadData);
+    createdLeads.push(lead);
+
+    // Audit log
+    if (req.user) {
+      auditLogService.log({
+        performedBy: req.user._id,
+        performerName: req.user.fullname,
+        performerEmail: req.user.email,
+        performerRole: req.user.role,
+        action: 'CREATE',
+        resource: 'LEAD',
+        resourceId: String(lead._id),
+        resourceLabel: `(Bulk) ${lead.name} — ${lead.type}`,
+        ipAddress: req.ip,
+      });
+    }
+  }
+
+  return res.status(httpStatus.CREATED).json({
+    status: httpStatus.CREATED,
+    message: `Successfully uploaded ${createdLeads.length} leads`,
+    data: createdLeads,
+  });
+});
+

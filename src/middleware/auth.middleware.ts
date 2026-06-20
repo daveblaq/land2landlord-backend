@@ -37,6 +37,14 @@ export const authenticateToken = async (
         return;
       }
 
+      if (user.status === false) {
+        res.status(httpStatus.UNAUTHORIZED).json({
+          status: httpStatus.UNAUTHORIZED,
+          message: 'Account disabled. Please contact the administrator.',
+        });
+        return;
+      }
+
       req.user = user;
  
 

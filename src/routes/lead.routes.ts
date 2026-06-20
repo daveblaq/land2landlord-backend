@@ -3,7 +3,10 @@ import {
   createLead,
   getLead,
   updateLead,
-  getLeads
+  getLeads,
+  getLeadStats,
+  addLeadNote,
+  createLeadsBulk
 } from '../controllers/lead.controller';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware';
 
@@ -85,6 +88,66 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'concierge'), getLead
 
 /**
  * @openapi
+ * /api/leads/stats:
+ *   get:
+ *     tags:
+ *       - Leads
+ *     summary: Retrieve aggregate counts of leads grouped by status (Admin/Concierge only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: type
+ *         in: query
+ *         schema:
+ *           type: string
+ *         description: Filter stats by lead type (buyer/seller)
+ *       - name: email
+ *         in: query
+ *         schema:
+ *           type: string
+ *         description: Filter stats by lead email
+ *     responses:
+ *       200:
+ *         description: Lead stats retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - admin or concierge role required
+ */
+router.get('/stats', authenticateToken, authorizeRoles('admin', 'concierge'), getLeadStats);
+
+/**
+ * @openapi
+ * /api/leads/bulk:
+ *   post:
+ *     tags:
+ *       - Leads
+ *     summary: Bulk create leads (Admin/Concierge only)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - leads
+ *             properties:
+ *               leads:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       201:
+ *         description: Leads created successfully
+ *       400:
+ *         description: Validation failed or bad request
+ */
+router.post('/bulk', authenticateToken, authorizeRoles('admin', 'concierge'), createLeadsBulk);
+
+/**
+ * @openapi
  * /api/leads/{id}:
  *   get:
  *     tags:
@@ -136,5 +199,41 @@ router.get('/:id', authenticateToken, authorizeRoles('admin', 'concierge'), getL
  *         description: Lead not found
  */
 router.patch('/:id', authenticateToken, authorizeRoles('admin', 'concierge'), updateLead);
+
+/**
+ * @openapi
+ * /api/leads/{id}/notes:
+ *   post:
+ *     tags:
+ *       - Leads
+ *     summary: Add a new staff note/activity update to a lead (Admin/Concierge only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Note added successfully
+ *       400:
+ *         description: Bad request
+ *       404:
+ *         description: Lead not found
+ */
+router.post('/:id/notes', authenticateToken, authorizeRoles('admin', 'concierge'), addLeadNote);
 
 export default router;

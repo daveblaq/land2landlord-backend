@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import propertyService from '../services/property.service';
 import catchAsync from '../utils/catchAsync';
 import { createPropertyValidator, updatePropertyValidator } from '../validation/property.validate';
@@ -22,6 +23,10 @@ export const createProperty = catchAsync(async (req: CustomRequest, res: Respons
         data: null,
       });
     }
+  }
+
+  if (req.user) {
+    req.body.createdBy = req.user._id;
   }
 
   const property = await propertyService.createProperty(req.body);
@@ -178,6 +183,7 @@ export const searchProperties = catchAsync(async (req: Request, res: Response) =
     limit: req.query.limit ? Number(req.query.limit) : undefined,
     page: req.query.page ? Number(req.query.page) : undefined,
     isFeatured: req.query.isFeatured === 'true' ? true : req.query.isFeatured === 'false' ? false : undefined,
+    createdBy: req.query.createdBy as string,
   };
 
   const results = await propertyService.queryProperties(options);
@@ -240,5 +246,27 @@ export const getPropertiesSitemap = catchAsync(async (req: Request, res: Respons
     status: httpStatus.OK,
     message: 'Sitemap property listings retrieved successfully',
     data: results,
+  });
+});
+
+/**
+ * Get Property Stats (Status Counts)
+ */
+export const getPropertyStats = catchAsync(async (req: Request, res: Response) => {
+  const filter: any = {};
+  if (req.query.location) {
+    filter.location = { $regex: req.query.location as string, $options: 'i' };
+  }
+  if (req.query.createdBy) {
+    if (Types.ObjectId.isValid(req.query.createdBy as string)) {
+      filter.createdBy = new Types.ObjectId(req.query.createdBy as string);
+    }
+  }
+
+  const stats = await propertyService.getPropertyStats(filter);
+  return res.status(httpStatus.OK).json({
+    status: httpStatus.OK,
+    message: 'Property stats retrieved successfully',
+    data: stats,
   });
 });

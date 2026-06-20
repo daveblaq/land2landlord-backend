@@ -14,6 +14,7 @@ export interface PropertyQueryOptions {
   limit?: number;
   page?: number;
   isFeatured?: boolean;
+  createdBy?: string;
 }
 
 /**
@@ -76,6 +77,11 @@ const queryProperties = async (options: PropertyQueryOptions) => {
   // Featured Filter
   if (options.isFeatured !== undefined) {
     filter.isFeatured = options.isFeatured;
+  }
+
+  // Creator Filter
+  if (options.createdBy) {
+    filter.createdBy = options.createdBy;
   }
 
   // Status Filter
@@ -177,6 +183,32 @@ const getPublishedPropertiesForSitemap = async () => {
   return Property.find({ status: 'published' }, 'slug updatedAt');
 };
 
+/**
+ * Get property counts/stats aggregated by status
+ */
+const getPropertyStats = async (filter: any): Promise<Record<string, number>> => {
+  const stats = await Property.aggregate([
+    { $match: filter },
+    {
+      $group: {
+        _id: '$status',
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const statuses = ['draft', 'pending-review', 'published', 'under-offer', 'sold', 'archived'];
+  const data = Object.fromEntries(statuses.map((s) => [s, 0]));
+
+  stats.forEach((item) => {
+    if (item._id && statuses.includes(item._id)) {
+      data[item._id] = item.count;
+    }
+  });
+
+  return data;
+};
+
 const propertyService = {
   createProperty,
   getPropertyById,
@@ -185,6 +217,7 @@ const propertyService = {
   deletePropertyById,
   queryProperties,
   getPublishedPropertiesForSitemap,
+  getPropertyStats,
 };
 
 export default propertyService;

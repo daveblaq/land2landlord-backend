@@ -1,4 +1,5 @@
 import { Lead, ILead } from '../models/lead.model';
+import { Property } from '../models/property.model';
 import emailService from '../utils/sendPulse';
 import partnerService from './partner.service';
 import logger from '../utils/logger';
@@ -88,23 +89,97 @@ const updateLeadById = async (id: string, updateBody: Partial<ILead>): Promise<I
  * Query leads with pagination (for admin search views)
  */
 const queryLeads = async (filter: any, options: { limit?: number; page?: number }) => {
-  const limit = options.limit && options.limit > 0 ? options.limit : 10;
+  const limit = options.limit !== undefined && options.limit >= 0 ? options.limit : 10;
   const page = options.page && options.page > 0 ? options.page : 1;
-  const skip = (page - 1) * limit;
 
   const totalResults = await Lead.countDocuments(filter);
-  const results = await Lead.find(filter)
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+
+  let results;
+  if (limit === 0) {
+    results = await Lead.find(filter).sort({ createdAt: -1 });
+  } else {
+    const skip = (page - 1) * limit;
+    results = await Lead.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+  }
 
   return {
     results,
     page,
     limit,
-    totalPages: Math.ceil(totalResults / limit),
+    totalPages: limit === 0 ? 1 : Math.ceil(totalResults / limit),
     totalResults,
   };
+};
+
+/**
+ * Get lead status counts/stats
+ */
+const getLeadStats = async (filter: any): Promise<Record<string, number>> => {
+  const stats = await Lead.aggregate([
+    { $match: filter },
+    {
+      $group: {
+        _id: '$status',
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const statuses = ['New', 'Contacted', 'Qualified', 'Viewing Scheduled', 'Negotiating', 'Closed'];
+  const data = Object.fromEntries(statuses.map((s) => [s, 0]));
+
+  stats.forEach((item) => {
+    if (item._id && statuses.includes(item._id)) {
+      data[item._id] = item.count;
+    }
+  });
+
+  return data;
+};
+
+/**
+ * Add a note to a lead, capturing current lead and property statuses
+ */
+const addNoteToLead = async (
+  leadId: string,
+  noteContent: string,
+  user: { _id: string; fullname: string; role: string }
+): Promise<ILead | null> => {
+  const lead = await Lead.findById(leadId);
+  if (!lead) return null;
+
+  let propertyStatus: string | undefined = undefined;
+  if (lead.metadata && lead.metadata.propertyId) {
+    const property = await Property.findById(lead.metadata.propertyId);
+    if (property) {
+      propertyStatus = property.status;
+    }
+  }
+
+  const newNote = {
+    content: noteContent,
+    submittedBy: {
+      userId: user._id,
+      name: user.fullname,
+      role: user.role,
+    },
+    capturedStatus: {
+      leadStatus: lead.status,
+      propertyStatus,
+    },
+    createdAt: new Date(),
+  };
+
+  if (!lead.notes) {
+    lead.notes = [];
+  }
+  lead.notes.push(newNote as any);
+  await lead.save();
+
+  return lead;
 };
 
 const leadService = {
@@ -112,6 +187,8 @@ const leadService = {
   getLeadById,
   updateLeadById,
   queryLeads,
+  getLeadStats,
+  addNoteToLead,
 };
 
 export default leadService;

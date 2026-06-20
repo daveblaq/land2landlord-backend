@@ -89,6 +89,14 @@ const loginUser = async (loginBody: any): Promise<AuthResult> => {
     };
   }
 
+  // Check if account is active
+  if (user.status === false) {
+    return {
+      status: httpStatus.FORBIDDEN,
+      message: 'Your account has been disabled. Please contact the administrator.',
+    };
+  }
+
   // Generate token
   const token = generateToken({ id: user._id, email: user.email });
 

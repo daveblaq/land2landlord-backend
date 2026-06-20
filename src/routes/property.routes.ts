@@ -6,7 +6,8 @@ import {
   deleteProperty,
   searchProperties,
   uploadPropertyImages,
-  getPropertiesSitemap
+  getPropertiesSitemap,
+  getPropertyStats
 } from '../controllers/property.controller';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware';
 
@@ -218,6 +219,11 @@ router.post('/upload', authenticateToken, authorizeRoles('admin', 'concierge'), 
  *         in: query
  *         schema:
  *           type: number
+ *       - name: createdBy
+ *         in: query
+ *         schema:
+ *           type: string
+ *         description: Filter properties by creator user ID
  *     responses:
  *       200:
  *         description: Search results retrieved successfully
@@ -236,6 +242,36 @@ router.get('/', searchProperties);
  *         description: Sitemap listings retrieved successfully
  */
 router.get('/sitemap', getPropertiesSitemap);
+
+/**
+ * @openapi
+ * /api/properties/stats:
+ *   get:
+ *     tags:
+ *       - Properties
+ *     summary: Retrieve aggregate counts of properties grouped by status (Admin/Concierge only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: location
+ *         in: query
+ *         schema:
+ *           type: string
+ *         description: Filter stats by location
+ *       - name: createdBy
+ *         in: query
+ *         schema:
+ *           type: string
+ *         description: Filter stats by creator user ID
+ *     responses:
+ *       200:
+ *         description: Property stats retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - admin or concierge role required
+ */
+router.get('/stats', authenticateToken, authorizeRoles('admin', 'concierge'), getPropertyStats);
 
 /**
  * @openapi
