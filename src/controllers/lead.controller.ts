@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import leadService from '../services/lead.service';
 import catchAsync from '../utils/catchAsync';
-import { createLeadValidator, updateLeadValidator } from '../validation/lead.validate';
+import { createLeadValidator, updateLeadValidator, createLeadBulkValidator } from '../validation/lead.validate';
 import { ZodError } from 'zod';
 import httpStatus from 'http-status';
 import { CustomRequest } from '../middleware/auth.middleware';
@@ -240,7 +240,7 @@ export const createLeadsBulk = catchAsync(async (req: CustomRequest, res: Respon
   const errors: string[] = [];
   leads.forEach((lead, index) => {
     try {
-      createLeadValidator.parse(lead);
+      createLeadBulkValidator.parse(lead);
     } catch (err) {
       if (err instanceof ZodError) {
         const rowErrors = err.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');

@@ -7,7 +7,8 @@ import {
   searchProperties,
   uploadPropertyImages,
   getPropertiesSitemap,
-  getPropertyStats
+  getPropertyStats,
+  getEpcLookup
 } from '../controllers/property.controller';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware';
 
@@ -272,6 +273,7 @@ router.get('/sitemap', getPropertiesSitemap);
  *         description: Forbidden - admin or concierge role required
  */
 router.get('/stats', authenticateToken, authorizeRoles('admin', 'concierge'), getPropertyStats);
+router.get('/epc-lookup', authenticateToken, authorizeRoles('admin', 'concierge'), getEpcLookup);
 
 /**
  * @openapi

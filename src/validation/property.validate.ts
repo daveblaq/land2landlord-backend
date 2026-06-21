@@ -35,7 +35,9 @@ export const createPropertyValidator = z.object({
   status: z.enum(['draft', 'pending-review', 'published', 'under-offer', 'sold', 'archived']).optional().default('draft'),
   displayOnHomepage: z.boolean().optional().default(false),
   isFeatured: z.boolean().optional().default(false),
-  isHighYield: z.boolean().optional().default(false)
+  isHighYield: z.boolean().optional().default(false),
+  latitude: z.number().optional(),
+  longitude: z.number().optional()
 });
 
 export const updatePropertyValidator = z.object({
@@ -73,5 +75,7 @@ export const updatePropertyValidator = z.object({
   status: z.enum(['draft', 'pending-review', 'published', 'under-offer', 'sold', 'archived']).optional(),
   displayOnHomepage: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
-  isHighYield: z.boolean().optional()
+  isHighYield: z.boolean().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional()
 });

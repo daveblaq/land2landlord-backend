@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const createLeadValidator = z.object({
+export const createLeadBulkValidator = z.object({
   name: z.string().min(1, 'Name is required').trim(),
   email: z.string().email('Invalid email address').trim(),
   phone: z.string().optional(),
@@ -8,7 +8,9 @@ export const createLeadValidator = z.object({
   status: z.enum(['New', 'Contacted', 'Qualified', 'Viewing Scheduled', 'Negotiating', 'Closed']).optional(),
   message: z.string().optional(),
   metadata: z.record(z.any()).optional().default({})
-}).superRefine((data, ctx) => {
+});
+
+export const createLeadValidator = createLeadBulkValidator.superRefine((data, ctx) => {
   if (data.type === 'Property Enquiry') {
     if (!data.metadata || !data.metadata.propertyId) {
       ctx.addIssue({

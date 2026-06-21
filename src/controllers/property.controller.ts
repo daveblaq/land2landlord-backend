@@ -8,6 +8,7 @@ import httpStatus from 'http-status';
 import { uploadToMedia } from '../utils/cloudinary';
 import { CustomRequest } from '../middleware/auth.middleware';
 import auditLogService from '../services/audit-log.service';
+import epcService from '../services/epc.service';
 
 /**
  * Create Property Listing
@@ -268,5 +269,29 @@ export const getPropertyStats = catchAsync(async (req: Request, res: Response) =
     status: httpStatus.OK,
     message: 'Property stats retrieved successfully',
     data: stats,
+  });
+});
+
+/**
+ * Look up EPC Rating using UK Gov API proxy
+ */
+export const getEpcLookup = catchAsync(async (req: Request, res: Response) => {
+  const postcode = req.query.postcode as string;
+  const address = req.query.address as string;
+
+  if (!postcode) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      status: httpStatus.BAD_REQUEST,
+      message: 'Postcode query parameter is required',
+      data: null,
+    });
+  }
+
+  const rating = await epcService.lookupEpcRating(postcode, address);
+
+  return res.status(httpStatus.OK).json({
+    status: httpStatus.OK,
+    message: 'EPC lookup completed successfully',
+    data: { rating },
   });
 });

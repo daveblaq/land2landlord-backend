@@ -39,6 +39,8 @@ export interface IProperty extends Document {
   displayOnHomepage: boolean;
   isFeatured: boolean;
   isHighYield: boolean;
+  latitude?: number;
+  longitude?: number;
   createdBy?: Schema.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -87,6 +89,8 @@ const PropertySchema = new Schema<IProperty>({
   displayOnHomepage: { type: Boolean, default: false },
   isFeatured: { type: Boolean, default: false },
   isHighYield: { type: Boolean, default: false },
+  latitude: { type: Number },
+  longitude: { type: Number },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
