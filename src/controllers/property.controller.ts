@@ -208,10 +208,10 @@ export const uploadPropertyImages = catchAsync(async (req: Request, res: Respons
     });
   }
 
-  if (images.length > 6) {
+  if (images.length > 8) {
     return res.status(httpStatus.BAD_REQUEST).json({
       status: httpStatus.BAD_REQUEST,
-      message: 'Cannot upload more than 6 images',
+      message: 'Cannot upload more than 8 images',
       data: null,
     });
   }
