@@ -32,6 +32,7 @@ export interface IProperty extends Document {
   arrearsStatus?: string;
   tenancyNotes?: string;
   epc?: string;
+  potentialEpc?: string;
   priceType?: 'guide-price' | 'fixed-price' | 'offers-over';
   tenancyStartDate?: Date;
   tenancyType?: string;
@@ -90,6 +91,7 @@ const PropertySchema = new Schema<IProperty>({
   arrearsStatus: { type: String, default: 'no-arrears' },
   tenancyNotes: { type: String },
   epc: { type: String },
+  potentialEpc: { type: String },
   priceType: { type: String, enum: ['guide-price', 'fixed-price', 'offers-over'] },
   tenancyStartDate: { type: Date },
   tenancyType: { type: String },

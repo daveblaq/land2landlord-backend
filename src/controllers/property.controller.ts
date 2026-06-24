@@ -287,11 +287,14 @@ export const getEpcLookup = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  const rating = await epcService.lookupEpcRating(postcode, address);
+  const result = await epcService.lookupEpcRating(postcode, address);
 
   return res.status(httpStatus.OK).json({
     status: httpStatus.OK,
     message: 'EPC lookup completed successfully',
-    data: { rating },
+    data: {
+      rating: result?.current || null,
+      potentialRating: result?.potential || null,
+    },
   });
 });

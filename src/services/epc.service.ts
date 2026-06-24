@@ -1,6 +1,11 @@
 import axios from 'axios';
 
-const lookupEpcRating = async (postcode: string, addressLine?: string): Promise<string | null> => {
+export interface EpcLookupResult {
+  current: string | null;
+  potential: string | null;
+}
+
+const lookupEpcRating = async (postcode: string, addressLine?: string): Promise<EpcLookupResult | null> => {
   const epcApiKey = process.env.EPC_API_KEY;
   if (!epcApiKey) {
     console.warn('EPC_API_KEY is not configured in environment variables');
@@ -8,34 +13,33 @@ const lookupEpcRating = async (postcode: string, addressLine?: string): Promise<
   }
 
   try {
-    const authHeader = Buffer.from(epcApiKey).toString('base64');
+    const trimmedPostcode = postcode.trim();
     
-    // Normalize postcode (remove spaces)
-    const normalizedPostcode = postcode.trim().replace(/\s+/g, '');
-    
-    const response = await axios.get('https://epc.opendatacommunities.org/api/v1/domestic/search', {
+    // 1. Search for domestic certificates by postcode
+    const response = await axios.get('https://api.get-energy-performance-data.communities.gov.uk/api/domestic/search', {
       params: {
-        postcode: normalizedPostcode,
-        size: 100,
+        postcode: trimmedPostcode,
       },
       headers: {
-        'Authorization': `Basic ${authHeader}`,
+        'Authorization': `Bearer ${epcApiKey}`,
         'Accept': 'application/json',
       },
     });
 
-    const rows = response.data?.rows || [];
-    if (rows.length === 0) {
+    const data = response.data?.data || [];
+    if (data.length === 0) {
       return null;
     }
+
+    let matchedCert: any = null;
 
     // If we have an addressLine, find the best match
     if (addressLine) {
       const cleanAddress = addressLine.toLowerCase().trim();
       
-      const bestMatch = rows.find((row: any) => {
-        const addr1 = (row['address1'] || '').toLowerCase().trim();
-        const addr2 = (row['address2'] || '').toLowerCase().trim();
+      matchedCert = data.find((item: any) => {
+        const addr1 = (item.addressLine1 || '').toLowerCase().trim();
+        const addr2 = (item.addressLine2 || '').toLowerCase().trim();
         
         // Match house number or street name
         if (addr1 && cleanAddress.includes(addr1)) return true;
@@ -43,15 +47,61 @@ const lookupEpcRating = async (postcode: string, addressLine?: string): Promise<
         
         return false;
       });
-
-      if (bestMatch) {
-        return bestMatch['current-energy-rating'] || null;
-      }
     }
 
-    // Fallback: return the rating of the first row
-    return rows[0]['current-energy-rating'] || null;
+    // Fallback to the first certificate if no address match is found
+    if (!matchedCert) {
+      matchedCert = data[0];
+    }
+
+    if (!matchedCert || !matchedCert.certificateNumber) {
+      return null;
+    }
+
+    const certNumber = matchedCert.certificateNumber;
+
+    // 2. Fetch full certificate details to retrieve both current and potential ratings
+    try {
+      const detailsResponse = await axios.get('https://api.get-energy-performance-data.communities.gov.uk/api/certificate', {
+        params: {
+          certificate_number: certNumber,
+        },
+        headers: {
+          'Authorization': `Bearer ${epcApiKey}`,
+          'Accept': 'application/json',
+        },
+      });
+
+      const details = detailsResponse.data?.data;
+      if (details) {
+        return {
+          current: details.current_energy_efficiency_band || matchedCert.currentEnergyEfficiencyBand || null,
+          potential: details.potential_energy_efficiency_band || null,
+        };
+      }
+    } catch (detailsError: any) {
+      console.warn(`Failed to fetch details for EPC cert ${certNumber}:`, detailsError.message || detailsError);
+    }
+
+    // Fallback: return only the current rating found in search results if details endpoint fails
+    return {
+      current: matchedCert.currentEnergyEfficiencyBand || null,
+      potential: null,
+    };
   } catch (error: any) {
+    if (error.response) {
+      const status = error.response.status;
+      if (status === 404) {
+        console.log(`No EPC certificates found for postcode: ${postcode}`);
+        return null;
+      }
+      if (status === 400) {
+        console.log(`Invalid postcode format for EPC lookup: ${postcode}`);
+        return null;
+      }
+      console.warn(`EPC API returned status ${status}:`, error.response.data || error.message);
+      return null;
+    }
     console.error('Error looking up EPC rating:', error.message || error);
     return null;
   }
