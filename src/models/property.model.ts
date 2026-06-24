@@ -32,6 +32,18 @@ export interface IProperty extends Document {
   arrearsStatus?: string;
   tenancyNotes?: string;
   epc?: string;
+  priceType?: 'guide-price' | 'fixed-price' | 'offers-over';
+  tenancyStartDate?: Date;
+  tenancyType?: string;
+  fixedTermEndDate?: Date;
+  rentPaymentStatus?: 'up-to-date' | 'partially-paid' | 'overdue';
+  depositProtected?: boolean;
+  noticeServed?: boolean;
+  tenantWantsToStay?: 'yes' | 'no' | 'unknown';
+  viewingArrangements?: 'vacant-access' | 'accompanied' | 'tenant-notify-24h' | 'tenant-notify-48h';
+  rentReviewDate?: Date;
+  compliance?: any;
+  mediaFiles?: any[];
   floorplans: any[];
   propertyPacks: any[];
   complianceDocuments: any[];
@@ -78,6 +90,18 @@ const PropertySchema = new Schema<IProperty>({
   arrearsStatus: { type: String, default: 'no-arrears' },
   tenancyNotes: { type: String },
   epc: { type: String },
+  priceType: { type: String, enum: ['guide-price', 'fixed-price', 'offers-over'] },
+  tenancyStartDate: { type: Date },
+  tenancyType: { type: String },
+  fixedTermEndDate: { type: Date },
+  rentPaymentStatus: { type: String, enum: ['up-to-date', 'partially-paid', 'overdue'] },
+  depositProtected: { type: Boolean },
+  noticeServed: { type: Boolean },
+  tenantWantsToStay: { type: String, enum: ['yes', 'no', 'unknown'] },
+  viewingArrangements: { type: String, enum: ['vacant-access', 'accompanied', 'tenant-notify-24h', 'tenant-notify-48h'] },
+  rentReviewDate: { type: Date },
+  compliance: { type: Schema.Types.Mixed },
+  mediaFiles: [{ type: Schema.Types.Mixed, default: [] }],
   floorplans: [{ type: Schema.Types.Mixed, default: [] }],
   propertyPacks: [{ type: Schema.Types.Mixed, default: [] }],
   complianceDocuments: [{ type: Schema.Types.Mixed, default: [] }],
