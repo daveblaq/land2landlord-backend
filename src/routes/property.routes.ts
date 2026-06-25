@@ -8,7 +8,8 @@ import {
   uploadPropertyImages,
   getPropertiesSitemap,
   getPropertyStats,
-  getEpcLookup
+  getEpcLookup,
+  createPropertiesBulk
 } from '../controllers/property.controller';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware';
 
@@ -125,6 +126,7 @@ const router = express.Router();
  *         description: Bad request
  */
 router.post('/', authenticateToken, authorizeRoles('admin', 'concierge'), createProperty);
+router.post('/bulk', authenticateToken, authorizeRoles('admin', 'concierge'), createPropertiesBulk);
 
 /**
  * @openapi

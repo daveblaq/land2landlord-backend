@@ -28,14 +28,14 @@ const createProperty = async (propertyBody: Partial<IProperty>): Promise<IProper
  * Get property by ID
  */
 const getPropertyById = async (id: string): Promise<IProperty | null> => {
-  return Property.findById(id);
+  return Property.findById(id).populate('createdBy', 'fullname email role');
 };
 
 /**
  * Get property by slug
  */
 const getPropertyBySlug = async (slug: string): Promise<IProperty | null> => {
-  return Property.findOne({ slug });
+  return Property.findOne({ slug }).populate('createdBy', 'fullname email role');
 };
 
 /**
@@ -157,21 +157,30 @@ const queryProperties = async (options: PropertyQueryOptions) => {
   }
 
   // Pagination
-  const limit = options.limit && options.limit > 0 ? options.limit : 10;
+  const limit = options.limit !== undefined && options.limit >= 0 ? options.limit : 10;
   const page = options.page && options.page > 0 ? options.page : 1;
-  const skip = (page - 1) * limit;
 
   const totalResults = await Property.countDocuments(filter);
-  const results = await Property.find(filter)
-    .sort(sort)
-    .skip(skip)
-    .limit(limit);
+  
+  let results;
+  if (limit === 0) {
+    results = await Property.find(filter)
+      .sort(sort)
+      .populate('createdBy', 'fullname email role');
+  } else {
+    const skip = (page - 1) * limit;
+    results = await Property.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .populate('createdBy', 'fullname email role');
+  }
 
   return {
     results,
     page,
     limit,
-    totalPages: Math.ceil(totalResults / limit),
+    totalPages: limit === 0 ? 1 : Math.ceil(totalResults / limit),
     totalResults,
   };
 };

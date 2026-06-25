@@ -11,7 +11,7 @@ export const createPropertyValidator = z.object({
   location: z.string().min(1, 'Location is required').trim(),
   postcode: z.string().min(1, 'Postcode is required').trim().regex(/^[A-Z]{1,2}[0-9R][0-9A-Z]?$/i, 'Please enter a valid UK postcode outcode (e.g., M5, LS1, SW1A).'),
   tenure: z.enum(['freehold', 'leasehold', 'share-of-freehold']),
-  heroImage: z.string().min(1, 'Hero image is required').trim(),
+  heroImage: z.string().trim().optional(),
   gallery: z.array(z.any()).max(8, 'Gallery cannot have more than 8 photos').optional().default([]),
   investmentMetrics: z.object({
     askingPrice: z.number().positive('Asking price must be positive'),

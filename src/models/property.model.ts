@@ -71,7 +71,7 @@ const PropertySchema = new Schema<IProperty>({
   location: { type: String, required: true },
   postcode: { type: String, required: true },
   tenure: { type: String, required: true },
-  heroImage: { type: String, required: true },
+  heroImage: { type: String, required: false },
   gallery: [{ type: Schema.Types.Mixed, default: [] }],
   investmentMetrics: {
     askingPrice: { type: Number, required: true },

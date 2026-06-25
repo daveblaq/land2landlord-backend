@@ -181,7 +181,7 @@ export const searchProperties = catchAsync(async (req: Request, res: Response) =
     bedrooms: req.query.bedrooms ? Number(req.query.bedrooms) : undefined,
     status: req.query.status as string,
     sortBy: req.query.sortBy as any,
-    limit: req.query.limit ? Number(req.query.limit) : undefined,
+    limit: req.query.limit !== undefined ? Number(req.query.limit) : undefined,
     page: req.query.page ? Number(req.query.page) : undefined,
     isFeatured: req.query.isFeatured === 'true' ? true : req.query.isFeatured === 'false' ? false : undefined,
     createdBy: req.query.createdBy as string,
@@ -298,3 +298,79 @@ export const getEpcLookup = catchAsync(async (req: Request, res: Response) => {
     },
   });
 });
+
+/**
+ * Bulk Create Properties (Admin/Concierge action)
+ */
+export const createPropertiesBulk = catchAsync(async (req: CustomRequest, res: Response) => {
+  const { properties } = req.body;
+
+  if (!properties || !Array.isArray(properties)) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      status: httpStatus.BAD_REQUEST,
+      message: 'properties must be an array of property objects',
+      data: null,
+    });
+  }
+
+  if (properties.length === 0) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      status: httpStatus.BAD_REQUEST,
+      message: 'properties array cannot be empty',
+      data: null,
+    });
+  }
+
+  const errors: string[] = [];
+  properties.forEach((property, index) => {
+    try {
+      createPropertyValidator.parse(property);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const rowErrors = err.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
+        errors.push(`Row ${index + 1}: ${rowErrors}`);
+      } else {
+        errors.push(`Row ${index + 1}: ${(err as Error).message}`);
+      }
+    }
+  });
+
+  if (errors.length > 0) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      status: httpStatus.BAD_REQUEST,
+      message: 'Validation failed for some properties',
+      data: { errors },
+    });
+  }
+
+  const createdProperties = [];
+  for (const propertyData of properties) {
+    if (req.user) {
+      propertyData.createdBy = req.user._id;
+    }
+    const property = await propertyService.createProperty(propertyData);
+    createdProperties.push(property);
+
+    // Audit log
+    if (req.user) {
+      auditLogService.log({
+        performedBy: req.user._id,
+        performerName: req.user.fullname,
+        performerEmail: req.user.email,
+        performerRole: req.user.role,
+        action: 'CREATE',
+        resource: 'PROPERTY',
+        resourceId: String(property._id),
+        resourceLabel: `(Bulk) ${property.title}`,
+        ipAddress: req.ip,
+      });
+    }
+  }
+
+  return res.status(httpStatus.CREATED).json({
+    status: httpStatus.CREATED,
+    message: `Successfully uploaded ${createdProperties.length} properties`,
+    data: createdProperties,
+  });
+});
+
