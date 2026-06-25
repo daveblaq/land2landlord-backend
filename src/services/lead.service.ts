@@ -3,6 +3,7 @@ import { Property } from '../models/property.model';
 import emailService from '../utils/sendPulse';
 import partnerService from './partner.service';
 import logger from '../utils/logger';
+import { pushLeadToMailchimp } from './mailchimp.service';
 
 /**
  * Generate email payload for the internal concierge team
@@ -67,6 +68,11 @@ const createLead = async (leadBody: Partial<ILead>): Promise<ILead> => {
   } catch (err) {
     logger.error(err, 'Failed to route lead to external partner');
   }
+
+  // 3. Push to Mailchimp (Non-blocking background task)
+  pushLeadToMailchimp(lead).catch((err) => {
+    logger.error(err, 'Unhandled exception during Mailchimp lead push');
+  });
 
   return lead;
 };
