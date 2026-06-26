@@ -4,6 +4,7 @@ import emailService from '../utils/sendPulse';
 import partnerService from './partner.service';
 import logger from '../utils/logger';
 import { pushLeadToMailchimp } from './mailchimp.service';
+import { getEpcCertificateEmailTemplate } from '../mails/epc.mail';
 
 /**
  * Generate email payload for the internal concierge team
@@ -97,6 +98,27 @@ const createLead = async (leadBody: Partial<ILead>): Promise<ILead> => {
   pushLeadToMailchimp(lead).catch((err) => {
     logger.error(err, 'Unhandled exception during Mailchimp lead push');
   });
+
+  // 4. Send Requested Document/EPC to User (Non-blocking background task)
+  if (lead.metadata && 
+      (lead.metadata.requestType === 'epc-certificate-download' || lead.metadata.requestType === 'document-download')) {
+    const documentUrl = lead.metadata.documentUrl;
+    const propertyTitle = lead.metadata.propertyTitle || 'Property';
+    const documentName = lead.metadata.documentName || 'Energy Performance Certificate (EPC)';
+
+    if (documentUrl) {
+      const nameParts = lead.name.trim().split(/\s+/);
+      const firstName = nameParts[0] || 'there';
+      const emailPayload = getEpcCertificateEmailTemplate(firstName, propertyTitle, documentUrl, documentName);
+      
+      try {
+        emailService.sendEmail(lead.email, emailPayload);
+        logger.info(`Dispatched document email to ${lead.email} for ${propertyTitle}`);
+      } catch (err) {
+        logger.error(err, `Failed to dispatch document email to ${lead.email}`);
+      }
+    }
+  }
 
   return lead;
 };
