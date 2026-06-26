@@ -39,26 +39,13 @@ export const getWelcomeEmailTemplate = (firstName: string) => {
         border-bottom: 2px solid #3185FC;
       }
       
-      .logo {
-        font-size: 24px;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-        color: #040013;
-      }
-      
-      .logo-brand {
-        color: #040013;
-      }
-      
-      .logo-accent {
-        color: #3185FC;
-      }
-      
-      .logo-number {
-        color: #FF8400;
-        background: rgba(255, 132, 0, 0.08);
-        padding: 2px 8px;
-        margin: 0 2px;
+      .logo-img {
+        display: block;
+        margin: 0 auto;
+        height: 36px;
+        max-height: 36px;
+        width: auto;
+        border: 0;
       }
       
       .content {
@@ -142,9 +129,7 @@ export const getWelcomeEmailTemplate = (firstName: string) => {
   <body>
     <div class="email-wrapper">
       <div class="header">
-        <div class="logo">
-          <span class="logo-brand">Landlord</span><span class="logo-number">2</span><span class="logo-accent">Landlord</span>
-        </div>
+        <img class="logo-img" src="https://res.cloudinary.com/dd1damszz/image/upload/v1782435869/logo_rd2i4q.svg" alt="Landlord2Landlord" />
       </div>
       
       <div class="content">
@@ -213,26 +198,13 @@ export const getConciergeWelcomeEmailTemplate = (fullname: string, email: string
         border-bottom: 2px solid #3185FC;
       }
       
-      .logo {
-        font-size: 24px;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-        color: #040013;
-      }
-      
-      .logo-brand {
-        color: #040013;
-      }
-      
-      .logo-accent {
-        color: #3185FC;
-      }
-      
-      .logo-number {
-        color: #FF8400;
-        background: rgba(255, 132, 0, 0.08);
-        padding: 2px 8px;
-        margin: 0 2px;
+      .logo-img {
+        display: block;
+        margin: 0 auto;
+        height: 36px;
+        max-height: 36px;
+        width: auto;
+        border: 0;
       }
       
       .content {
@@ -328,9 +300,7 @@ export const getConciergeWelcomeEmailTemplate = (fullname: string, email: string
   <body>
     <div class="email-wrapper">
       <div class="header">
-        <div class="logo">
-          <span class="logo-brand">Landlord</span><span class="logo-number">2</span><span class="logo-accent">Landlord</span>
-        </div>
+        <img class="logo-img" src="https://res.cloudinary.com/dd1damszz/image/upload/v1782435869/logo_rd2i4q.svg" alt="Landlord2Landlord" />
       </div>
       
       <div class="content">

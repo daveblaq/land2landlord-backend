@@ -1,35 +1,12 @@
 import { Lead, ILead } from '../models/lead.model';
 import { Property } from '../models/property.model';
+import User from '../models/user.model';
 import emailService from '../utils/sendPulse';
 import partnerService from './partner.service';
 import logger from '../utils/logger';
 import { pushLeadToMailchimp } from './mailchimp.service';
 import { getEpcCertificateEmailTemplate } from '../mails/epc.mail';
-
-/**
- * Generate email payload for the internal concierge team
- */
-const getConciergeEmailTemplate = (lead: ILead) => {
-  return {
-    header: `[L2L Lead Multiplexer] New Lead: ${lead.type}`,
-    body: `
-      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-        <h2 style="color: #2D3748; border-bottom: 2px solid #E2E8F0; padding-bottom: 10px;">New Lead Captured</h2>
-        <p><strong>Lead ID:</strong> ${lead._id}</p>
-        <p><strong>Type:</strong> ${lead.type}</p>
-        <p><strong>Name:</strong> ${lead.name}</p>
-        <p><strong>Email:</strong> ${lead.email}</p>
-        <p><strong>Phone:</strong> ${lead.phone || 'N/A'}</p>
-        <p><strong>Message/Notes:</strong> ${lead.message || 'N/A'}</p>
-        
-        <h3 style="color: #4A5568; margin-top: 20px;">Lead Metadata</h3>
-        <pre style="background: #F7FAFC; padding: 10px; border: 1px solid #E2E8F0; border-radius: 4px; overflow-x: auto;">
-${JSON.stringify(lead.metadata, null, 2)}
-        </pre>
-      </div>
-    `
-  };
-};
+import { getLeadNotificationEmailTemplate } from '../mails/lead-notification.mail';
 
 /**
  * Formats a phone number to standard E.164 format with country code prefix (+44 for UK by default)
@@ -61,16 +38,35 @@ const createLead = async (leadBody: Partial<ILead>): Promise<ILead> => {
   }
   const lead = await Lead.create(leadBody);
 
-  // 1. Notify Concierge Team via Email
-  const conciergeEmail = process.env.SENDER_EMAIL;
-  if (conciergeEmail) {
-    const emailPayload = getConciergeEmailTemplate(lead);
-    try {
-      emailService.sendEmail(conciergeEmail, emailPayload);
-    } catch (err) {
-      logger.error(err, 'Failed to dispatch concierge email alert');
-    }
-  }
+  // 1. Notify Active Admins & Concierges via Email (Asynchronous background dispatch)
+  User.find({
+    role: { $in: ['admin', 'concierge'] },
+    status: true,
+  })
+    .then((staffMembers) => {
+      if (staffMembers && staffMembers.length > 0) {
+        staffMembers.forEach((member) => {
+          if (member.email) {
+            const emailPayload = getLeadNotificationEmailTemplate(lead, member.fullname);
+            try {
+              emailService.sendEmail(member.email, emailPayload);
+            } catch (err) {
+              logger.error(err, `Failed to dispatch lead notification email to staff member ${member.email}`);
+            }
+          }
+        });
+      } else {
+        // Fallback to SENDER_EMAIL if no active staff members are found
+        const conciergeEmail = process.env.SENDER_EMAIL;
+        if (conciergeEmail) {
+          const emailPayload = getLeadNotificationEmailTemplate(lead, 'Team Member');
+          emailService.sendEmail(conciergeEmail, emailPayload);
+        }
+      }
+    })
+    .catch((err) => {
+      logger.error(err, 'Failed to retrieve staff members for lead notification email alerts');
+    });
 
   // 2. Multiplexer: Route to External Partners concurrently based on Type
   const partnerPayload = {
