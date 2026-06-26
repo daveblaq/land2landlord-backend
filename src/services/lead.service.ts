@@ -31,9 +31,33 @@ ${JSON.stringify(lead.metadata, null, 2)}
 };
 
 /**
+ * Formats a phone number to standard E.164 format with country code prefix (+44 for UK by default)
+ */
+const formatPhoneNumber = (phone: string): string => {
+  const clean = phone.replace(/[\s()\-]/g, '');
+
+  if (clean.startsWith('+')) {
+    return clean;
+  }
+  if (clean.startsWith('00')) {
+    return `+${clean.substring(2)}`;
+  }
+  if (clean.startsWith('44')) {
+    return `+${clean}`;
+  }
+  if (clean.startsWith('0')) {
+    return `+44${clean.substring(1)}`;
+  }
+  return `+44${clean}`;
+};
+
+/**
  * Create a new lead and trigger multiplexer routing
  */
 const createLead = async (leadBody: Partial<ILead>): Promise<ILead> => {
+  if (leadBody.phone) {
+    leadBody.phone = formatPhoneNumber(leadBody.phone);
+  }
   const lead = await Lead.create(leadBody);
 
   // 1. Notify Concierge Team via Email
