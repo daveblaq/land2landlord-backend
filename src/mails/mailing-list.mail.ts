@@ -1,21 +1,18 @@
-import { ILead } from '../models/lead.model';
-
 /**
- * Generate email payload with HTML content to confirm receipt of a lead's request.
- * Sent back directly to the lead (user).
+ * Generate email payload with HTML content to confirm a user's mailing list subscription.
+ * Sent back directly to the subscriber.
  * 
- * @param lead The lead details
- * @param firstName First name of the lead recipient
+ * @param userEmail The subscriber's email address
  */
-export const getLeadAcknowledgementEmailTemplate = (lead: ILead, firstName: string) => {
+export const getMailingListWelcomeTemplate = (userEmail: string) => {
   return {
-    header: `Inquiry Received: ${lead.type} - Landlord2Landlord`,
+    header: 'Welcome to the Landlord2Landlord Mailing List!',
     body: `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inquiry Received</title>
+    <title>Mailing List Welcome</title>
     <style>
       * {
         margin: 0;
@@ -61,6 +58,19 @@ export const getLeadAcknowledgementEmailTemplate = (lead: ILead, firstName: stri
         padding: 48px 40px;
       }
       
+      .welcome-badge {
+        display: inline-block;
+        background-color: rgba(49, 133, 252, 0.08);
+        color: #3185FC;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 6px 14px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+      }
+      
       .title {
         color: #040013;
         font-size: 22px;
@@ -75,43 +85,45 @@ export const getLeadAcknowledgementEmailTemplate = (lead: ILead, firstName: stri
         margin-bottom: 24px;
       }
       
-      .details-box {
+      .highlight-box {
         background-color: #F7FAFC;
         border: 1px solid #E2E8F0;
         border-left: 4px solid #3185FC;
         padding: 24px;
-        margin: 32px 0 24px 0;
+        margin: 32px 0;
       }
       
-      .details-box h3 {
+      .highlight-box h3 {
         color: #040013;
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 700;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 1px solid #E2E8F0;
-        padding-bottom: 8px;
       }
       
-      .detail-row {
-        margin-bottom: 16px;
-        font-size: 14px;
+      .highlight-box p {
         color: #4A5568;
+        font-size: 14px;
+        margin-bottom: 8px;
       }
       
-      .detail-row:last-child {
+      .highlight-box p:last-child {
         margin-bottom: 0;
       }
       
-      .detail-label {
+      .btn {
+        display: block;
+        background-color: #3185FC;
+        color: #ffffff !important;
+        text-decoration: none;
+        padding: 14px 28px;
         font-weight: 700;
-        color: #040013;
-        margin-bottom: 2px;
-      }
-      
-      .detail-value {
-        word-break: break-word;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: center;
+        margin-top: 10px;
       }
       
       .footer {
@@ -127,6 +139,11 @@ export const getLeadAcknowledgementEmailTemplate = (lead: ILead, firstName: stri
         color: #718096;
         margin-bottom: 8px;
       }
+      
+      .footer a {
+        color: #3185FC;
+        text-decoration: none;
+      }
     </style>
   </head>
   <body>
@@ -136,39 +153,25 @@ export const getLeadAcknowledgementEmailTemplate = (lead: ILead, firstName: stri
       </div>
       
       <div class="content">
-        <h2 class="title">Hello ${firstName},</h2>
-        <p class="paragraph">Thank you for reaching out to Landlord2Landlord. We have successfully received your inquiry and our concierge team is currently reviewing it.</p>
-        <p class="paragraph">One of our specialists will get back to you as soon as possible to discuss your request.</p>
+        <div class="welcome-badge">Subscription Confirmed</div>
+        <h2 class="title">Hello,</h2>
+        <p class="paragraph">Thank you for subscribing to the Landlord2Landlord mailing list! You are now set to receive priority updates from us.</p>
         
-        <div class="details-box">
-          <h3>Your Submission Details</h3>
-          <div class="detail-row">
-            <div class="detail-label">Inquiry Type:</div>
-            <div class="detail-value"><strong>${lead.type}</strong></div>
-          </div>
-          <div class="detail-row">
-            <div class="detail-label">Name:</div>
-            <div class="detail-value">${lead.name}</div>
-          </div>
-          <div class="detail-row">
-            <div class="detail-label">Email:</div>
-            <div class="detail-value">${lead.email}</div>
-          </div>
-          <div class="detail-row">
-            <div class="detail-label">Phone:</div>
-            <div class="detail-value">${lead.phone || 'N/A'}</div>
-          </div>
-          <div class="detail-row">
-            <div class="detail-label">Message:</div>
-            <div class="detail-value">${lead.message || 'N/A'}</div>
-          </div>
+        <div class="highlight-box">
+          <h3>What you will receive</h3>
+          <p>• Off-market property listings and investment deals</p>
+          <p>• Premium HMO and property portfolio updates</p>
+          <p>• Industry news, landlord tools, and updates</p>
         </div>
         
-        <p class="paragraph" style="margin-bottom: 0;">We appreciate your patience and look forward to assisting you.</p>
+        <p class="paragraph">We will keep you updated when new opportunities arise. If you have any questions or want to speak with our concierge team, feel free to reply directly to this email or visit our website.</p>
+        
+        <a href="${process.env.WEBSITE_URL || 'https://landlord2-landlord.vercel.app'}" class="btn" target="_blank">Explore Properties</a>
       </div>
       
       <div class="footer">
-        <p>This is an automated receipt confirmation from Landlord2Landlord. Please do not reply directly to this email.</p>
+        <p>This is an automated subscription receipt sent to ${userEmail}.</p>
+        <p>To unsubscribe, please contact our support team.</p>
         <p>&copy; 2026 Landlord2Landlord. All rights reserved.</p>
       </div>
     </div>

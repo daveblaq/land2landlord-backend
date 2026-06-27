@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import leadService from '../services/lead.service';
 import catchAsync from '../utils/catchAsync';
 import { createLeadValidator, updateLeadValidator, createLeadBulkValidator } from '../validation/lead.validate';
-import { ZodError } from 'zod';
+import { ZodError, z } from 'zod';
 import httpStatus from 'http-status';
 import { CustomRequest } from '../middleware/auth.middleware';
 import auditLogService from '../services/audit-log.service';
@@ -284,6 +284,45 @@ export const createLeadsBulk = catchAsync(async (req: CustomRequest, res: Respon
     status: httpStatus.CREATED,
     message: `Successfully uploaded ${createdLeads.length} leads`,
     data: createdLeads,
+  });
+});
+
+/**
+ * Subscribe to the mailing list from home page
+ */
+export const subscribeMailingList = catchAsync(async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  const validator = z.object({
+    email: z.string().email('Invalid email address').trim()
+  });
+
+  try {
+    validator.parse({ email });
+  } catch (err) {
+    if (err instanceof ZodError) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        status: httpStatus.BAD_REQUEST,
+        message: err.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
+        data: null,
+      });
+    }
+  }
+
+  const lead = await leadService.createLead({
+    name: 'Mailing List Subscriber',
+    email,
+    type: 'General Enquiry',
+    message: 'Mailing List Subscription',
+    metadata: {
+      requestType: 'mailing-list-subscription'
+    }
+  });
+
+  return res.status(httpStatus.CREATED).json({
+    status: httpStatus.CREATED,
+    message: 'Successfully subscribed to the mailing list',
+    data: lead
   });
 });
 

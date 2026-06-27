@@ -119,10 +119,9 @@ export const getLeadNotificationEmailTemplate = (lead: ILead, recipientName: str
       }
       
       .detail-row {
-        margin-bottom: 12px;
+        margin-bottom: 16px;
         font-size: 14px;
         color: #4A5568;
-        display: flex;
       }
       
       .detail-row:last-child {
@@ -132,12 +131,11 @@ export const getLeadNotificationEmailTemplate = (lead: ILead, recipientName: str
       .detail-label {
         font-weight: 700;
         color: #040013;
-        width: 120px;
-        flex-shrink: 0;
+        margin-bottom: 2px;
       }
       
       .detail-value {
-        word-break: break-all;
+        word-break: break-word;
       }
       
       .metadata-section {

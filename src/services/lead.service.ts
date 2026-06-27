@@ -8,6 +8,7 @@ import { pushLeadToMailchimp } from './mailchimp.service';
 import { getEpcCertificateEmailTemplate } from '../mails/epc.mail';
 import { getLeadNotificationEmailTemplate } from '../mails/lead-notification.mail';
 import { getLeadAcknowledgementEmailTemplate } from '../mails/lead-acknowledgement.mail';
+import { getMailingListWelcomeTemplate } from '../mails/mailing-list.mail';
 
 /**
  * Formats a phone number to standard E.164 format with country code prefix (+44 for UK by default)
@@ -39,35 +40,39 @@ const createLead = async (leadBody: Partial<ILead>): Promise<ILead> => {
   }
   const lead = await Lead.create(leadBody);
 
+  const isMailingList = lead.metadata && lead.metadata.requestType === 'mailing-list-subscription';
+
   // 1. Notify Active Admins & Concierges via Email (Asynchronous background dispatch)
-  User.find({
-    role: { $in: ['admin', 'concierge'] },
-    status: true,
-  })
-    .then((staffMembers) => {
-      if (staffMembers && staffMembers.length > 0) {
-        staffMembers.forEach((member) => {
-          if (member.email) {
-            const emailPayload = getLeadNotificationEmailTemplate(lead, member.fullname);
-            try {
-              emailService.sendEmail(member.email, emailPayload);
-            } catch (err) {
-              logger.error(err, `Failed to dispatch lead notification email to staff member ${member.email}`);
-            }
-          }
-        });
-      } else {
-        // Fallback to SENDER_EMAIL if no active staff members are found
-        const conciergeEmail = process.env.SENDER_EMAIL;
-        if (conciergeEmail) {
-          const emailPayload = getLeadNotificationEmailTemplate(lead, 'Team Member');
-          emailService.sendEmail(conciergeEmail, emailPayload);
-        }
-      }
+  if (!isMailingList) {
+    User.find({
+      role: { $in: ['admin', 'concierge'] },
+      status: true,
     })
-    .catch((err) => {
-      logger.error(err, 'Failed to retrieve staff members for lead notification email alerts');
-    });
+      .then((staffMembers) => {
+        if (staffMembers && staffMembers.length > 0) {
+          staffMembers.forEach((member) => {
+            if (member.email) {
+              const emailPayload = getLeadNotificationEmailTemplate(lead, member.fullname);
+              try {
+                emailService.sendEmail(member.email, emailPayload);
+              } catch (err) {
+                logger.error(err, `Failed to dispatch lead notification email to staff member ${member.email}`);
+              }
+            }
+          });
+        } else {
+          // Fallback to SENDER_EMAIL if no active staff members are found
+          const conciergeEmail = process.env.SENDER_EMAIL;
+          if (conciergeEmail) {
+            const emailPayload = getLeadNotificationEmailTemplate(lead, 'Team Member');
+            emailService.sendEmail(conciergeEmail, emailPayload);
+          }
+        }
+      })
+      .catch((err) => {
+        logger.error(err, 'Failed to retrieve staff members for lead notification email alerts');
+      });
+  }
 
   // 2. Multiplexer: Route to External Partners concurrently based on Type
   const partnerPayload = {
@@ -122,15 +127,25 @@ const createLead = async (leadBody: Partial<ILead>): Promise<ILead> => {
     (lead.metadata.requestType === 'epc-certificate-download' || lead.metadata.requestType === 'document-download');
 
   if (!isDocumentDownload) {
-    const nameParts = lead.name.trim().split(/\s+/);
-    const firstName = nameParts[0] || 'there';
-    const emailPayload = getLeadAcknowledgementEmailTemplate(lead, firstName);
-    
-    try {
-      emailService.sendEmail(lead.email, emailPayload);
-      logger.info(`Dispatched lead acknowledgment email to ${lead.email}`);
-    } catch (err) {
-      logger.error(err, `Failed to dispatch lead acknowledgment email to ${lead.email}`);
+    if (isMailingList) {
+      const emailPayload = getMailingListWelcomeTemplate(lead.email);
+      try {
+        emailService.sendEmail(lead.email, emailPayload);
+        logger.info(`Dispatched mailing list welcome email to ${lead.email}`);
+      } catch (err) {
+        logger.error(err, `Failed to dispatch mailing list welcome email to ${lead.email}`);
+      }
+    } else {
+      const nameParts = lead.name.trim().split(/\s+/);
+      const firstName = nameParts[0] || 'there';
+      const emailPayload = getLeadAcknowledgementEmailTemplate(lead, firstName);
+      
+      try {
+        emailService.sendEmail(lead.email, emailPayload);
+        logger.info(`Dispatched lead acknowledgment email to ${lead.email}`);
+      } catch (err) {
+        logger.error(err, `Failed to dispatch lead acknowledgment email to ${lead.email}`);
+      }
     }
   }
 

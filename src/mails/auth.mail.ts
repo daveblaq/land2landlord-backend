@@ -249,8 +249,8 @@ export const getConciergeWelcomeEmailTemplate = (fullname: string, email: string
       
       .credential-row strong {
         color: #040013;
-        display: inline-block;
-        width: 140px;
+        display: block;
+        margin-bottom: 4px;
       }
       
       .pwd-badge {

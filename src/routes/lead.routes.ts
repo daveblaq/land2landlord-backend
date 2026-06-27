@@ -6,7 +6,8 @@ import {
   getLeads,
   getLeadStats,
   addLeadNote,
-  createLeadsBulk
+  createLeadsBulk,
+  subscribeMailingList
 } from '../controllers/lead.controller';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.middleware';
 
@@ -51,6 +52,33 @@ const router = express.Router();
  *         description: Bad request
  */
 router.post('/', createLead);
+/**
+ * @openapi
+ * /api/leads/subscribe:
+ *   post:
+ *     tags:
+ *       - Leads
+ *     summary: Subscribe to the newsletter mailing list from the home page
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The email address to subscribe to the newsletter
+ *     responses:
+ *       201:
+ *         description: Successfully subscribed to the mailing list
+ *       400:
+ *         description: Bad request (invalid email format)
+ */
+router.post('/subscribe', subscribeMailingList);
 
 /**
  * @openapi
