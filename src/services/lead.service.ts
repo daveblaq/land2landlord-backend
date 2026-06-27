@@ -7,6 +7,7 @@ import logger from '../utils/logger';
 import { pushLeadToMailchimp } from './mailchimp.service';
 import { getEpcCertificateEmailTemplate } from '../mails/epc.mail';
 import { getLeadNotificationEmailTemplate } from '../mails/lead-notification.mail';
+import { getLeadAcknowledgementEmailTemplate } from '../mails/lead-acknowledgement.mail';
 
 /**
  * Formats a phone number to standard E.164 format with country code prefix (+44 for UK by default)
@@ -116,6 +117,23 @@ const createLead = async (leadBody: Partial<ILead>): Promise<ILead> => {
     }
   }
 
+  // 5. Send Acknowledgment Email to the Lead User (Non-blocking background task)
+  const isDocumentDownload = lead.metadata && 
+    (lead.metadata.requestType === 'epc-certificate-download' || lead.metadata.requestType === 'document-download');
+
+  if (!isDocumentDownload) {
+    const nameParts = lead.name.trim().split(/\s+/);
+    const firstName = nameParts[0] || 'there';
+    const emailPayload = getLeadAcknowledgementEmailTemplate(lead, firstName);
+    
+    try {
+      emailService.sendEmail(lead.email, emailPayload);
+      logger.info(`Dispatched lead acknowledgment email to ${lead.email}`);
+    } catch (err) {
+      logger.error(err, `Failed to dispatch lead acknowledgment email to ${lead.email}`);
+    }
+  }
+
   return lead;
 };
 
@@ -173,7 +191,7 @@ const getLeadStats = async (filter: any): Promise<Record<string, number>> => {
         _id: '$status',
         count: { $sum: 1 },
       },
-    },
+    }, 
   ]);
 
   const statuses = ['New', 'Contacted', 'Qualified', 'Viewing Scheduled', 'Negotiating', 'Closed'];
