@@ -126,6 +126,39 @@ const router = express.Router();
  *         description: Bad request
  */
 router.post('/', authenticateToken, authorizeRoles('admin', 'concierge'), createProperty);
+/**
+ * @openapi
+ * /api/properties/bulk:
+ *   post:
+ *     tags:
+ *       - Properties
+ *     summary: Bulk create property listings from uploaded file rows (Admin/Concierge only)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - properties
+ *             properties:
+ *               properties:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   description: Individual property fields to create (matches standard property structure)
+ *     responses:
+ *       201:
+ *         description: Properties created successfully
+ *       400:
+ *         description: Validation failed or bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - admin or concierge role required
+ */
 router.post('/bulk', authenticateToken, authorizeRoles('admin', 'concierge'), createPropertiesBulk);
 
 /**
@@ -275,6 +308,37 @@ router.get('/sitemap', getPropertiesSitemap);
  *         description: Forbidden - admin or concierge role required
  */
 router.get('/stats', authenticateToken, authorizeRoles('admin', 'concierge'), getPropertyStats);
+/**
+ * @openapi
+ * /api/properties/epc-lookup:
+ *   get:
+ *     tags:
+ *       - Properties
+ *     summary: Search government database for Energy Performance Certificates (EPC) (Admin/Concierge only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: postcode
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Postcode to search EPCs for
+ *       - name: address
+ *         in: query
+ *         schema:
+ *           type: string
+ *         description: Optional address text match to filter results
+ *     responses:
+ *       200:
+ *         description: EPC records matched and retrieved successfully
+ *       400:
+ *         description: Bad request - postcode query parameter missing
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - admin or concierge role required
+ */
 router.get('/epc-lookup', authenticateToken, authorizeRoles('admin', 'concierge'), getEpcLookup);
 
 /**
