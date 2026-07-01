@@ -2,6 +2,9 @@ import { Property, IProperty } from '../models/property.model';
 
 export interface PropertyQueryOptions {
   location?: string;
+  lat?: number;
+  lng?: number;
+  radiusMiles?: number;
   minPrice?: number;
   maxPrice?: number;
   minRent?: number;
@@ -94,8 +97,21 @@ const queryProperties = async (options: PropertyQueryOptions) => {
     filter.status = 'published';
   }
 
-  // Location Filter (Regex case-insensitive)
-  if (options.location) {
+  // Location Filter: radius geo query (when lat/lng/radiusMiles all supplied) takes
+  // precedence over plain text matching; otherwise fall back to regex on `location`.
+  const hasGeoQuery =
+    options.lat !== undefined && !Number.isNaN(options.lat) &&
+    options.lng !== undefined && !Number.isNaN(options.lng) &&
+    options.radiusMiles !== undefined && !Number.isNaN(options.radiusMiles);
+
+  if (hasGeoQuery) {
+    const EARTH_RADIUS_MILES = 3963.2;
+    filter.location_geo = {
+      $geoWithin: {
+        $centerSphere: [[options.lng, options.lat], options.radiusMiles! / EARTH_RADIUS_MILES],
+      },
+    };
+  } else if (options.location) {
     filter.location = { $regex: options.location, $options: 'i' };
   }
 

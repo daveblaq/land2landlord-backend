@@ -172,6 +172,9 @@ export const deleteProperty = catchAsync(async (req: CustomRequest, res: Respons
 export const searchProperties = catchAsync(async (req: Request, res: Response) => {
   const options = {
     location: req.query.location as string,
+    lat: req.query.lat !== undefined ? Number(req.query.lat) : undefined,
+    lng: req.query.lng !== undefined ? Number(req.query.lng) : undefined,
+    radiusMiles: req.query.radiusMiles !== undefined ? Number(req.query.radiusMiles) : undefined,
     minPrice: req.query.minPrice ? Number(req.query.minPrice) : undefined,
     maxPrice: req.query.maxPrice ? Number(req.query.maxPrice) : undefined,
     minRent: req.query.minRent ? Number(req.query.minRent) : undefined,

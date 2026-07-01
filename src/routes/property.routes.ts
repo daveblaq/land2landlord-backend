@@ -206,6 +206,22 @@ router.post('/upload', authenticateToken, authorizeRoles('admin', 'concierge'), 
  *         in: query
  *         schema:
  *           type: string
+ *         description: Free-text location match. Ignored if lat/lng/radiusMiles are all supplied.
+ *       - name: lat
+ *         in: query
+ *         schema:
+ *           type: number
+ *         description: Latitude of the search origin (used together with lng and radiusMiles for radius search)
+ *       - name: lng
+ *         in: query
+ *         schema:
+ *           type: number
+ *         description: Longitude of the search origin (used together with lat and radiusMiles for radius search)
+ *       - name: radiusMiles
+ *         in: query
+ *         schema:
+ *           type: number
+ *         description: Radius in miles for geospatial search around lat/lng. When omitted, falls back to text-based location matching.
  *       - name: minPrice
  *         in: query
  *         schema:

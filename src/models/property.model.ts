@@ -23,6 +23,7 @@ export interface IProperty extends Document {
   };
   serviceCharge: number;
   groundRent: number;
+  insuranceCostMonthly?: number;
   councilTaxBand?: string;
   tenented: boolean;
   tenancyStatus?: string;
@@ -54,6 +55,10 @@ export interface IProperty extends Document {
   isHighYield: boolean;
   latitude?: number;
   longitude?: number;
+  location_geo?: {
+    type: 'Point';
+    coordinates: [number, number]; // [lng, lat] — GeoJSON order
+  };
   createdBy?: Schema.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -82,6 +87,7 @@ const PropertySchema = new Schema<IProperty>({
   },
   serviceCharge: { type: Number, default: 0 },
   groundRent: { type: Number, default: 0 },
+  insuranceCostMonthly: { type: Number, default: 0 },
   councilTaxBand: { type: String },
   tenented: { type: Boolean, default: true, required: true },
   tenancyStatus: { type: String },
@@ -117,6 +123,10 @@ const PropertySchema = new Schema<IProperty>({
   isHighYield: { type: Boolean, default: false },
   latitude: { type: Number },
   longitude: { type: Number },
+  location_geo: {
+    type: { type: String, enum: ['Point'], default: undefined },
+    coordinates: { type: [Number], default: undefined },
+  },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
@@ -124,6 +134,7 @@ const PropertySchema = new Schema<IProperty>({
 PropertySchema.index({ status: 1, location: 1, propertyType: 1 });
 PropertySchema.index({ 'investmentMetrics.grossYield': -1 });
 PropertySchema.index({ 'investmentMetrics.askingPrice': 1 });
+PropertySchema.index({ location_geo: '2dsphere' });
 
 // Helper to slugify a string
 const slugify = (text: string) => {
@@ -160,6 +171,19 @@ PropertySchema.pre('save', function (next) {
     // Append unique suffix to prevent slug collisions
     const randomSuffix = Math.random().toString(36).substring(2, 7);
     this.slug = `${baseSlug}-${randomSuffix}`;
+  }
+
+  // Keep location_geo in sync with latitude/longitude for $geoWithin radius queries
+  if (
+    typeof this.latitude === 'number' && !Number.isNaN(this.latitude) &&
+    typeof this.longitude === 'number' && !Number.isNaN(this.longitude)
+  ) {
+    this.location_geo = {
+      type: 'Point',
+      coordinates: [this.longitude, this.latitude],
+    };
+  } else {
+    this.location_geo = undefined;
   }
 
   next();
