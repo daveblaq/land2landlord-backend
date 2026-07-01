@@ -20,9 +20,10 @@ Welcome to the backend architecture and implementation blueprint for **Landlords
 * **Runtime:** Node.js (v20+ LTS recommended)
 * **Language:** TypeScript (Strict compilation mode)
 * **Database Engine:** MongoDB (via Mongoose ODM)
-* [cite_start]**Telemetry Data Infrastructure:** PostHog [cite: 280]
-* [cite_start]**Transactional Mail Dispatch:** Resend / Specialized Email Service [cite: 282]
-* [cite_start]**Serverless Compute Hosting Layer:** Vercel [cite: 283]
+* **Media Storage:** Cloudinary
+* **Transactional Mail Dispatch:** SendPulse
+* **Marketing/CRM Sync:** Mailchimp
+* **Compute Hosting Layer:** Render / Google Cloud Platform (build scripts target both `render-postbuild` and `gcp-build`)
 
 ---
 
@@ -50,100 +51,68 @@ Acts as our centralized transactional pipeline. [cite_start]Every user interacti
 ## 4. Database Schema Design (Mongoose Structures)
 
 ### Properties Collection (`properties`)
-```typescript
-import { Schema, model, Document } from 'mongoose';
 
+The real, current schema lives in [`src/models/property.model.ts`](src/models/property.model.ts). Field names are camelCase (not the snake_case shown in earlier drafts of this document), and the schema is flatter — tenancy, financial, and media fields sit directly on the document rather than nested under `tenancy_info`/`financial_info`/`media_assets` sub-objects:
+
+```typescript
 export interface IProperty extends Document {
   title: string;
   slug: string;
-  description: string;
-  property_type: string;
+  description: any; // Mixed: plain string or rich text block structure
+  propertyType: string;
   bedrooms: number;
   bathrooms: number;
+  sqft: number;
+  address: string;
   location: string;
   postcode: string;
   tenure: string;
-  status: 'Draft' | 'Pending Review' | 'Published' | 'Under Offer' | 'Sold' | 'Archived';
-  investment_metrics: {
-    asking_price: number;
-    monthly_rent: number;
-    annual_rent: number; // Programmatic calculation hook: monthly_rent * 12
-    gross_yield: number;
-    lease_years_remaining?: number;
+  heroImage: string;
+  gallery: any[];
+  investmentMetrics: {
+    askingPrice: number;
+    monthlyRent: number;
+    annualRent: number;      // auto-calculated: monthlyRent * 12 (pre-save hook)
+    grossYield: number;       // auto-calculated: (annualRent / askingPrice) * 100 (pre-save hook)
+    leaseYearsRemaining?: number;
   };
-  tenancy_info: {
-    tenanted: boolean;
-    tenancy_status?: string;
-    tenant_move_in_date?: Date;
-    contract_type?: string;
-    rent_collection_status?: string;
-    arrears_status?: string;
-    tenancy_notes?: string;
-  };
-  financial_info: {
-    service_charge: number;
-    ground_rent: number;
-    council_tax_band: string;
-  };
-  media_assets: {
-    hero_image: string;
-    gallery_images: string[];
-    documents: {
-      epc?: string;
-      floorplans?: string[];
-      property_packs?: string[];
-      compliance_documents?: string[];
-    };
-  };
+  serviceCharge: number;
+  groundRent: number;
+  councilTaxBand?: string;
+  tenented: boolean;
+  tenancyStatus?: string;
+  tenantMoveInDate?: Date;
+  contractType?: string;
+  rentCollectionStatus?: string;
+  arrearsStatus?: string;
+  tenancyNotes?: string;
+  epc?: string;
+  potentialEpc?: string;
+  priceType?: 'guide-price' | 'fixed-price' | 'offers-over';
+  tenancyStartDate?: Date;
+  tenancyType?: string;
+  fixedTermEndDate?: Date;
+  rentPaymentStatus?: 'up-to-date' | 'partially-paid' | 'overdue';
+  depositProtected?: boolean;
+  noticeServed?: boolean;
+  tenantWantsToStay?: 'yes' | 'no' | 'unknown';
+  viewingArrangements?: 'vacant-access' | 'accompanied' | 'tenant-notify-24h' | 'tenant-notify-48h';
+  rentReviewDate?: Date;
+  compliance?: any;
+  mediaFiles?: any[];
+  floorplans: any[];
+  propertyPacks: any[];
+  complianceDocuments: any[];
+  status: 'draft' | 'pending-review' | 'published' | 'under-offer' | 'sold' | 'archived';
+  displayOnHomepage: boolean;
+  isFeatured: boolean;
+  isHighYield: boolean;
+  latitude?: number;
+  longitude?: number;
+  createdBy?: Schema.Types.ObjectId;
 }
+```
 
-const PropertySchema = new Schema<IProperty>({
-  title: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-  description: { type: String, required: true },
-  property_type: { type: String, required: true },
-  bedrooms: { type: Number, required: true },
-  bathrooms: { type: Number, required: true },
-  location: { type: String, required: true },
-  postcode: { type: String, required: true },
-  tenure: { type: String, required: true },
-  status: { type: String, enum: ['Draft', 'Pending Review', 'Published', 'Under Offer', 'Sold', 'Archived'], default: 'Draft' },
-  investment_metrics: {
-    asking_price: { type: Number, required: true },
-    monthly_rent: { type: Number, required: true },
-    annual_rent: { type: Number, required: true }, // Automatically enforced on save hooks
-    gross_yield: { type: Number, required: true },
-    lease_years_remaining: { type: Number }
-  },
-  tenancy_info: {
-    tenanted: { type: Boolean, default: true, required: true },
-    tenancy_status: { type: String },
-    tenant_move_in_date: { type: Date },
-    contract_type: { type: String },
-    rent_collection_status: { type: String },
-    arrears_status: { type: String },
-    tenancy_notes: { type: String }
-  },
-  financial_info: {
-    service_charge: { type: Number, default: 0 },
-    ground_rent: { type: Number, default: 0 },
-    council_tax_band: { type: String, required: true }
-  },
-  media_assets: {
-    hero_image: { type: String, required: true },
-    gallery_images: [{ type: String }],
-    documents: {
-      epc: { type: String },
-      floorplans: [{ type: String }],
-      property_packs: [{ type: String }],
-      compliance_documents: [{ type: String }]
-    }
-  }
-}, { timestamps: true });
+Indexes: `{ status, location, propertyType }` (compound), `investmentMetrics.grossYield` (desc), `investmentMetrics.askingPrice` (asc). The slug is auto-generated from `title` with a random suffix to avoid collisions, and `annualRent`/`grossYield` are recalculated on every save — clients should not rely on setting these directly.
 
-// Performance Optimization Indexes
-PropertySchema.index({ status: 1, location: 1, property_type: 1 });
-PropertySchema.index({ 'investment_metrics.gross_yield': -1 });
-PropertySchema.index({ 'investment_metrics.asking_price': 1 });
-
-export const Property = model<IProperty>('Property', PropertySchema);
+See [`src/models/user.model.ts`](src/models/user.model.ts), [`src/models/lead.model.ts`](src/models/lead.model.ts), and [`src/models/audit-log.model.ts`](src/models/audit-log.model.ts) for the other collections.

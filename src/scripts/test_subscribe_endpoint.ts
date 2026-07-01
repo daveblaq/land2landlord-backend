@@ -29,10 +29,10 @@ async function runSubscriptionTest() {
     });
 
     console.log('✓ Lead created successfully:');
-    console.log(`  ID: ${lead._id}`);
-    console.log(`  Email: ${lead.email}`);
-    console.log(`  Type: ${lead.type}`);
-    console.log(`  Metadata: ${JSON.stringify(lead.metadata)}`);
+    console.log(`ID: ${lead._id}`);
+    console.log(`Email: ${lead.email}`);
+    console.log(`Type: ${lead.type}`);
+    console.log(`Metadata: ${JSON.stringify(lead.metadata)}`);
 
     // Clean up test data
     await Lead.deleteOne({ _id: lead._id });
