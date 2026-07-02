@@ -98,7 +98,8 @@ const queryProperties = async (options: PropertyQueryOptions) => {
   }
 
   // Location Filter: radius geo query (when lat/lng/radiusMiles all supplied) takes
-  // precedence over plain text matching; otherwise fall back to regex on `location`.
+  // precedence over plain text matching; otherwise fall back to regex on `location`
+  // or `address` (so a full street address selected from a suggestion still matches).
   const hasGeoQuery =
     options.lat !== undefined && !Number.isNaN(options.lat) &&
     options.lng !== undefined && !Number.isNaN(options.lng) &&
@@ -112,7 +113,8 @@ const queryProperties = async (options: PropertyQueryOptions) => {
       },
     };
   } else if (options.location) {
-    filter.location = { $regex: options.location, $options: 'i' };
+    const locationRegex = { $regex: options.location, $options: 'i' };
+    filter.$or = [{ location: locationRegex }, { address: locationRegex }];
   }
 
   // Asking Price range
